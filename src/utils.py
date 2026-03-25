@@ -2,13 +2,22 @@
 Utility functions and database management for NBA Predictor.
 """
 
-import sqlite3
 import os
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
 import pandas as pd
 
+# Import from database module
+from .database import (
+    get_db_connection as get_db_connection_ctx,
+    get_db_connection_compat,
+    init_database,
+    read_sql,
+    execute_query,
+    get_database_mode,
+    IS_CLOUD
+)
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -41,142 +50,13 @@ def ensure_directories():
     MODELS_DIR.mkdir(exist_ok=True)
 
 
-def get_db_connection() -> sqlite3.Connection:
-    """Get a connection to the SQLite database."""
+def get_db_connection():
+    """Get a connection to the database (SQLite local or Supabase cloud)."""
     ensure_directories()
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.row_factory = sqlite3.Row
-    return conn
+    return get_db_connection_compat()
 
 
-def init_database():
-    """Initialize the database with required tables."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Teams table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS teams (
-            team_id INTEGER PRIMARY KEY,
-            abbreviation TEXT NOT NULL,
-            full_name TEXT NOT NULL,
-            city TEXT,
-            nickname TEXT,
-            conference TEXT,
-            division TEXT,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Games table - historical game results
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS games (
-            game_id TEXT PRIMARY KEY,
-            game_date DATE NOT NULL,
-            season TEXT NOT NULL,
-            season_type TEXT,
-            home_team_id INTEGER NOT NULL,
-            away_team_id INTEGER NOT NULL,
-            home_score INTEGER,
-            away_score INTEGER,
-            home_win INTEGER,
-            point_diff INTEGER,
-            total_points INTEGER,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (home_team_id) REFERENCES teams(team_id),
-            FOREIGN KEY (away_team_id) REFERENCES teams(team_id)
-        )
-    """)
-
-    # Team stats table - team season statistics
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS team_stats (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            team_id INTEGER NOT NULL,
-            season TEXT NOT NULL,
-            games_played INTEGER,
-            wins INTEGER,
-            losses INTEGER,
-            win_pct REAL,
-            pts_per_game REAL,
-            opp_pts_per_game REAL,
-            off_rating REAL,
-            def_rating REAL,
-            net_rating REAL,
-            pace REAL,
-            fg_pct REAL,
-            fg3_pct REAL,
-            ft_pct REAL,
-            reb_per_game REAL,
-            ast_per_game REAL,
-            tov_per_game REAL,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (team_id) REFERENCES teams(team_id),
-            UNIQUE(team_id, season)
-        )
-    """)
-
-    # Schedule table - upcoming games
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS schedule (
-            game_id TEXT PRIMARY KEY,
-            game_date DATE NOT NULL,
-            game_time TEXT,
-            home_team_id INTEGER NOT NULL,
-            away_team_id INTEGER NOT NULL,
-            status TEXT DEFAULT 'scheduled',
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (home_team_id) REFERENCES teams(team_id),
-            FOREIGN KEY (away_team_id) REFERENCES teams(team_id)
-        )
-    """)
-
-    # Predictions table - store our predictions
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS predictions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            game_id TEXT NOT NULL,
-            prediction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            home_win_prob REAL,
-            predicted_spread REAL,
-            predicted_total REAL,
-            model_version TEXT,
-            actual_home_win INTEGER,
-            actual_spread INTEGER,
-            actual_total INTEGER,
-            FOREIGN KEY (game_id) REFERENCES games(game_id)
-        )
-    """)
-
-    # Odds table - store betting odds
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS odds (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            game_id TEXT NOT NULL,
-            bookmaker TEXT NOT NULL,
-            market_type TEXT NOT NULL,
-            home_odds REAL,
-            away_odds REAL,
-            spread_line REAL,
-            spread_home_odds REAL,
-            spread_away_odds REAL,
-            total_line REAL,
-            over_odds REAL,
-            under_odds REAL,
-            fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (game_id) REFERENCES schedule(game_id)
-        )
-    """)
-
-    # Create indexes for common queries
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_games_date ON games(game_date)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_games_teams ON games(home_team_id, away_team_id)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_schedule_date ON schedule(game_date)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_game ON predictions(game_id)")
-
-    conn.commit()
-    conn.close()
-    print("Database initialized successfully.")
+# Note: init_database is imported from database module
 
 
 def get_current_season() -> str:

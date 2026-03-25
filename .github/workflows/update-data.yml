@@ -1,0 +1,75 @@
+name: Update NBA Data
+
+on:
+  schedule:
+    # 北京时间 10:00 (UTC 02:00) - 获取赛程和赔率
+    - cron: '0 2 * * *'
+    # 北京时间 14:00 (UTC 06:00) - 更新比赛结果
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      update_type:
+        description: 'Update type'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - schedule
+          - results
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Determine update type
+        id: update-type
+        run: |
+          # 根据触发时间或手动输入确定更新类型
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.update_type }}" >> $GITHUB_OUTPUT
+          elif [ "$(date -u +%H)" -lt "5" ]; then
+            # UTC 02:00 (北京 10:00) - 更新赛程
+            echo "type=schedule" >> $GITHUB_OUTPUT
+          else
+            # UTC 06:00 (北京 14:00) - 更新结果
+            echo "type=results" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run data update
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          API_SPORTS_KEY: ${{ secrets.API_SPORTS_KEY }}
+        run: |
+          UPDATE_TYPE="${{ steps.update-type.outputs.type }}"
+
+          if [ "$UPDATE_TYPE" = "all" ]; then
+            python scripts/update_data.py --all
+          elif [ "$UPDATE_TYPE" = "schedule" ]; then
+            python scripts/update_data.py --schedule
+          elif [ "$UPDATE_TYPE" = "results" ]; then
+            python scripts/update_data.py --results
+          fi
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "Update completed at $(date)"
+          echo "Update type: ${{ steps.update-type.outputs.type }}"
