@@ -32,12 +32,14 @@ def get_supabase_connection():
     # URL format: https://xxxxx.supabase.co
     project_ref = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '')
 
+    # Use direct connection with SSL mode (required for external connections)
     conn = psycopg2.connect(
         host=f"db.{project_ref}.supabase.co",
         port=5432,
         database="postgres",
         user="postgres",
         password=SUPABASE_DB_PASSWORD,
+        sslmode='require',
         cursor_factory=RealDictCursor
     )
     return conn
