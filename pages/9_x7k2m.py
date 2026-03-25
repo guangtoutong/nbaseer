@@ -273,7 +273,9 @@ def render_model_training(t: Translator):
     """Render model training section."""
     st.subheader(t('train_model'))
 
-    if not DB_PATH.exists():
+    # Check database status (works for both local and cloud)
+    status = check_system_status()
+    if not status['database']:
         st.warning("Please initialize database first" if st.session_state.lang == 'en'
                    else "请先初始化数据库")
         return
