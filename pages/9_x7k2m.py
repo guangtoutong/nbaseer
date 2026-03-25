@@ -211,17 +211,39 @@ def render_data_management(t: Translator):
     st.info(f"Mode: {db_mode}")
 
     # Test connection button
-    if st.button("🔍 Test Connection", use_container_width=True):
-        with st.spinner("Testing connection..."):
-            result = test_connection()
+    col_test1, col_test2 = st.columns(2)
 
-        if result['success']:
-            st.success("✅ Connection successful!")
-        else:
-            st.error(f"❌ Connection failed: {result['error']}")
+    with col_test1:
+        if st.button("🔍 Test Connection", use_container_width=True):
+            with st.spinner("Testing connection..."):
+                result = test_connection()
 
-        with st.expander("Connection Details"):
-            st.json(result)
+            if result['success']:
+                st.success("✅ Connection successful!")
+            else:
+                st.error(f"❌ Connection failed: {result['error']}")
+
+            with st.expander("Connection Details"):
+                st.json(result)
+
+    with col_test2:
+        if st.button("📊 Check Data", use_container_width=True):
+            from src.database import get_db_connection
+            with st.spinner("Checking data..."):
+                try:
+                    with get_db_connection() as conn:
+                        cursor = conn.cursor()
+                        counts = {}
+                        for table in ['teams', 'games', 'team_stats', 'schedule', 'predictions']:
+                            try:
+                                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                                counts[table] = cursor.fetchone()[0]
+                            except Exception as e:
+                                counts[table] = f"Error: {e}"
+                    st.success("✅ Data check complete")
+                    st.json(counts)
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
 
     st.divider()
 
