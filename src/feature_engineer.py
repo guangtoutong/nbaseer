@@ -30,7 +30,7 @@ class FeatureEngineer:
         Returns:
             Dictionary with team features
         """
-        conn = get_db_connection()
+        from .database import read_sql
 
         # Get all games before this date for the team
         query = """
@@ -46,10 +46,9 @@ class FeatureEngineer:
             ORDER BY g.game_date DESC
         """
 
-        games = pd.read_sql(query, conn, params=(
+        games = read_sql(query, params=(
             team_id, team_id, team_id, team_id, team_id, team_id, as_of_date
         ))
-        conn.close()
 
         if games.empty:
             return self._default_team_features()
@@ -178,7 +177,7 @@ class FeatureEngineer:
         Returns:
             Dictionary with matchup features
         """
-        conn = get_db_connection()
+        from .database import read_sql
 
         # Get historical matchups
         query = """
@@ -193,11 +192,10 @@ class FeatureEngineer:
             LIMIT 10
         """
 
-        h2h = pd.read_sql(query, conn, params=(
+        h2h = read_sql(query, params=(
             home_team_id, home_team_id, away_team_id,
             away_team_id, home_team_id, as_of_date
         ))
-        conn.close()
 
         features = {}
 
@@ -314,7 +312,7 @@ class FeatureEngineer:
         Returns:
             Tuple of (X, y_win, y_spread, y_total)
         """
-        conn = get_db_connection()
+        from .database import read_sql, IS_CLOUD
 
         # Get historical games
         query = """
@@ -340,8 +338,7 @@ class FeatureEngineer:
 
         query += " ORDER BY g.game_date"
 
-        games = pd.read_sql(query, conn, params=params)
-        conn.close()
+        games = read_sql(query, params=tuple(params) if params else None)
 
         if games.empty:
             return np.array([]), np.array([]), np.array([]), np.array([])
