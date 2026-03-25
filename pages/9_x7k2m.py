@@ -81,24 +81,37 @@ def render_login(t: Translator):
 
 def check_system_status():
     """Check system status."""
-    from src.database import IS_CLOUD, test_connection, execute_query
+    from src.database import test_connection, get_db_connection
 
     db_ok = False
-    if IS_CLOUD:
-        # Check if cloud database is connected and has tables
-        try:
-            result = test_connection()
-            if result['success']:
-                # Check if teams table has data
-                teams = execute_query("SELECT COUNT(*) as cnt FROM teams", fetch=True)
-                db_ok = teams and len(teams) > 0 and teams[0].get('cnt', 0) > 0
-        except:
-            db_ok = False
-    else:
-        db_ok = DB_PATH.exists()
+    teams_count = 0
+    games_count = 0
+
+    try:
+        result = test_connection()
+        if result['success']:
+            # Check if tables have data
+            with get_db_connection() as conn:
+                cursor = conn.cursor()
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM teams")
+                    teams_count = cursor.fetchone()[0]
+                except:
+                    pass
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM games")
+                    games_count = cursor.fetchone()[0]
+                except:
+                    pass
+            db_ok = teams_count > 0
+    except Exception as e:
+        print(f"Status check error: {e}")
+        db_ok = False
 
     return {
         'database': db_ok,
+        'teams_count': teams_count,
+        'games_count': games_count,
         'model': NBAPredictor.model_exists(),
     }
 
@@ -154,8 +167,10 @@ def render_system_status(t: Translator):
     with col1:
         if status['database']:
             st.success(f"✅ {t('database_status')}: {t('initialized')}")
+            st.caption(f"Teams: {status.get('teams_count', 0)} | Games: {status.get('games_count', 0)}")
         else:
             st.error(f"❌ {t('database_status')}: {t('not_initialized')}")
+            st.caption(f"Teams: {status.get('teams_count', 0)} | Games: {status.get('games_count', 0)}")
 
     with col2:
         if status['model']:
