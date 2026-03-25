@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav style="margin-bottom: 20px; color: var(--text-muted);">
+    <a href="{{ site_url }}{% if lang == 'en' %}/en/{% endif %}" style="color: var(--primary);">
+        {% if lang == 'zh' %}首页{% else %}Home{% endif %}
+    </a>
+    <span style="margin: 0 10px;">/</span>
+    <span>{{ date_display }}</span>
+</nav>
+
+<!-- Page Header -->
+<section style="margin-bottom: 30px;">
+    <h1>{{ title }}</h1>
+    <p style="color: var(--text-muted);">
+        {% if lang == 'zh' %}
+        共 {{ predictions|length }} 场比赛预测
+        {% if has_results %} - 已有比赛结果{% endif %}
+        {% else %}
+        {{ predictions|length }} game predictions
+        {% if has_results %} - Results available{% endif %}
+        {% endif %}
+    </p>
+</section>
+
+<!-- Structured Data for Predictions -->
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "{{ title }}",
+    "description": "{{ description }}",
+    "datePublished": "{{ date }}",
+    "author": {
+        "@type": "Organization",
+        "name": "{{ site_name }}"
+    }
+}
+</script>
+
+<!-- Ad Slot Top -->
+<div class="ad-slot">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-XXXXXXXX"
+         data-ad-slot="XXXXXXXX"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<!-- Predictions List -->
+<section>
+    {% if predictions %}
+        {% for pred in predictions %}
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <strong>{{ pred.home_name or 'Home Team' }}</strong>
+                    <span style="color: var(--text-muted);">vs</span>
+                    <strong>{{ pred.away_name or 'Away Team' }}</strong>
+                </div>
+                {% if pred.actual_home_win is not none %}
+                <div style="font-size: 1.2rem;">
+                    {{ pred.home_score }} - {{ pred.away_score }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <!-- Win Probability -->
+                <div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">
+                        {% if lang == 'zh' %}主队胜率{% else %}Home Win Probability{% endif %}
+                    </div>
+                    {% set prob = pred.home_win_prob or 0.5 %}
+                    <div style="font-size: 1.5rem; font-weight: bold; color: {% if prob > 0.6 %}var(--success){% elif prob < 0.4 %}var(--danger){% else %}var(--text){% endif %};">
+                        {{ (prob * 100)|round(1) }}%
+                    </div>
+                    {% if pred.actual_home_win is not none %}
+                        {% set predicted_home = prob > 0.5 %}
+                        {% set correct = (predicted_home and pred.actual_home_win == 1) or (not predicted_home and pred.actual_home_win == 0) %}
+                        <span class="result {% if correct %}correct{% else %}wrong{% endif %}">
+                            {% if correct %}
+                                {% if lang == 'zh' %}预测正确{% else %}Correct{% endif %}
+                            {% else %}
+                                {% if lang == 'zh' %}预测错误{% else %}Wrong{% endif %}
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Predicted Spread -->
+                <div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">
+                        {% if lang == 'zh' %}预测分差{% else %}Predicted Spread{% endif %}
+                    </div>
+                    {% set spread = pred.predicted_spread or 0 %}
+                    <div style="font-size: 1.5rem; font-weight: bold;">
+                        {% if spread > 0 %}+{% endif %}{{ spread|round(1) }}
+                    </div>
+                    {% if pred.actual_home_win is not none %}
+                        {% set actual_spread = (pred.home_score or 0) - (pred.away_score or 0) %}
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">
+                            {% if lang == 'zh' %}实际: {% else %}Actual: {% endif %}
+                            {% if actual_spread > 0 %}+{% endif %}{{ actual_spread }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Predicted Total -->
+                <div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">
+                        {% if lang == 'zh' %}预测总分{% else %}Predicted Total{% endif %}
+                    </div>
+                    <div style="font-size: 1.5rem; font-weight: bold;">
+                        {{ (pred.predicted_total or 0)|round(1) }}
+                    </div>
+                    {% if pred.actual_home_win is not none %}
+                        {% set actual_total = (pred.home_score or 0) + (pred.away_score or 0) %}
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">
+                            {% if lang == 'zh' %}实际: {% else %}Actual: {% endif %}{{ actual_total }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if loop.index == 2 %}
+        <!-- Ad Slot Middle -->
+        <div class="ad-slot">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-XXXXXXXX"
+                 data-ad-slot="XXXXXXXX"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+        </div>
+        {% endif %}
+        {% endfor %}
+    {% else %}
+    <div class="card">
+        <p style="text-align: center; color: var(--text-muted);">
+            {% if lang == 'zh' %}该日期暂无预测数据{% else %}No predictions available for this date{% endif %}
+        </p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Navigation -->
+<section style="display: flex; justify-content: space-between; margin-top: 30px;">
+    {% set prev_date = (date | replace('-', '') | int - 1) %}
+    {% set next_date = (date | replace('-', '') | int + 1) %}
+    <a href="{{ site_url }}{% if lang == 'en' %}/en{% endif %}/predictions/" style="color: var(--primary);">
+        &larr; {% if lang == 'zh' %}上一天{% else %}Previous Day{% endif %}
+    </a>
+    <a href="{{ site_url }}{% if lang == 'en' %}/en{% endif %}/predictions/" style="color: var(--primary);">
+        {% if lang == 'zh' %}下一天{% else %}Next Day{% endif %} &rarr;
+    </a>
+</section>
+
+<!-- CTA -->
+<section style="text-align: center; margin-top: 40px;">
+    <a href="https://nbaseer.streamlit.app" target="_blank"
+       style="display: inline-block; background: var(--primary); color: white; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+        {% if lang == 'zh' %}查看实时预测{% else %}View Live Predictions{% endif %} &rarr;
+    </a>
+</section>
+{% endblock %}

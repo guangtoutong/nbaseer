@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ canonical_url }}">
+
+    <!-- Language alternates -->
+    {% if lang == 'zh' %}
+    <link rel="alternate" hreflang="zh" href="{{ canonical_url }}">
+    <link rel="alternate" hreflang="en" href="{{ canonical_url.replace(site_url, site_url + '/en') }}">
+    {% else %}
+    <link rel="alternate" hreflang="en" href="{{ canonical_url }}">
+    <link rel="alternate" hreflang="zh" href="{{ canonical_url.replace('/en/', '/') }}">
+    {% endif %}
+    <link rel="alternate" hreflang="x-default" href="{{ site_url }}">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="{{ title }}">
+    <meta property="og:description" content="{{ description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ canonical_url }}">
+    <meta property="og:site_name" content="{{ site_name }}">
+    <meta property="og:locale" content="{{ 'zh_CN' if lang == 'zh' else 'en_US' }}">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ title }}">
+    <meta name="twitter:description" content="{{ description }}">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "{{ site_name }}",
+        "url": "{{ site_url }}",
+        "description": "{{ description }}",
+        "inLanguage": "{{ 'zh-CN' if lang == 'zh' else 'en-US' }}"
+    }
+    </script>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ site_url }}/favicon.png">
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXX" crossorigin="anonymous"></script>
+
+    <!-- Styles -->
+    <style>
+        :root {
+            --primary: #ff6b35;
+            --primary-dark: #e55a2b;
+            --bg: #0a0a0a;
+            --bg-card: #1a1a1a;
+            --text: #ffffff;
+            --text-muted: #888888;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --border: #333333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo span {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            display: block;
+        }
+
+        nav {
+            margin-top: 15px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        nav a:hover {
+            opacity: 1;
+        }
+
+        .lang-switch {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+        }
+
+        .lang-switch a {
+            color: white;
+            text-decoration: none;
+            padding: 5px 10px;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content */
+        main {
+            padding: 40px 0;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Game Cards */
+        .game-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .team-name {
+            font-weight: 600;
+        }
+
+        .team-abbr {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .vs {
+            color: var(--text-muted);
+            padding: 0 20px;
+        }
+
+        .prediction {
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .prob {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .prob.high {
+            color: var(--success);
+        }
+
+        .prob.low {
+            color: var(--danger);
+        }
+
+        .result {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .result.correct {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .result.wrong {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-card);
+            padding: 30px 0;
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .game-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .team {
+                justify-content: center;
+            }
+
+            .vs {
+                padding: 10px 0;
+            }
+
+            .prediction {
+                text-align: center;
+            }
+        }
+
+        /* Ad placeholder */
+        .ad-slot {
+            background: var(--bg-card);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            color: var(--text-muted);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container" style="position: relative;">
+            <a href="{{ site_url }}{% if lang == 'en' %}/en/{% endif %}" class="logo">
+                NBA先知
+                <span>NBAseer - AI Predictions</span>
+            </a>
+            <nav>
+                {% if lang == 'zh' %}
+                <a href="{{ site_url }}">首页</a>
+                <a href="https://nbaseer.streamlit.app" target="_blank">实时预测</a>
+                {% else %}
+                <a href="{{ site_url }}/en/">Home</a>
+                <a href="https://nbaseer.streamlit.app" target="_blank">Live Predictions</a>
+                {% endif %}
+            </nav>
+            <div class="lang-switch">
+                {% if lang == 'zh' %}
+                <a href="{{ site_url }}/en/">EN</a>
+                {% else %}
+                <a href="{{ site_url }}/">中文</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; {{ current_year }} {{ site_name }}. {% if lang == 'zh' %}保留所有权利{% else %}All rights reserved{% endif %}.</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">
+                {% if lang == 'zh' %}
+                数据仅供参考，请理性分析。生成时间: {{ generated_at }}
+                {% else %}
+                Data for reference only. Generated: {{ generated_at }}
+                {% endif %}
+            </p>
+        </div>
+    </footer>
+
+    <!-- Google Analytics (replace with your ID) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXX');
+    </script>
+</body>
+</html>
