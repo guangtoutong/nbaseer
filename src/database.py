@@ -110,18 +110,27 @@ def get_db_connection():
         conn.close()
 
 
+def adapt_query(query: str) -> str:
+    """Adapt SQL query for the current database backend."""
+    if IS_CLOUD:
+        # Convert SQLite ? placeholders to PostgreSQL %s
+        query = query.replace('?', '%s')
+        # Convert AUTOINCREMENT to SERIAL
+        query = query.replace('AUTOINCREMENT', '')
+        query = query.replace('INTEGER PRIMARY KEY', 'SERIAL PRIMARY KEY')
+        # Convert INSERT OR REPLACE to PostgreSQL UPSERT
+        if 'INSERT OR REPLACE INTO' in query.upper():
+            # Extract table name and convert to ON CONFLICT
+            query = query.replace('INSERT OR REPLACE INTO', 'INSERT INTO')
+            query = query.replace('insert or replace into', 'INSERT INTO')
+    return query
+
+
 def execute_query(query: str, params: tuple = None, fetch: bool = True) -> Optional[list]:
     """Execute a query and optionally fetch results."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-
-        # Adapt query syntax for PostgreSQL vs SQLite
-        if IS_CLOUD:
-            # Convert SQLite ? placeholders to PostgreSQL %s
-            query = query.replace('?', '%s')
-            # Convert AUTOINCREMENT to SERIAL
-            query = query.replace('AUTOINCREMENT', '')
-            query = query.replace('INTEGER PRIMARY KEY', 'SERIAL PRIMARY KEY')
+        query = adapt_query(query)
 
         if params:
             cursor.execute(query, params)

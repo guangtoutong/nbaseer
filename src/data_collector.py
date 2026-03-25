@@ -24,6 +24,7 @@ from .utils import (
     get_season_from_date,
     DB_PATH
 )
+from .database import execute_query, IS_CLOUD, adapt_query
 
 
 # Rate limiting delay (seconds) to avoid API throttling
@@ -51,17 +52,24 @@ def fetch_all_teams() -> pd.DataFrame:
     })
 
     # Store in database
-    conn = get_db_connection()
-
     for _, row in df.iterrows():
-        conn.execute("""
-            INSERT OR REPLACE INTO teams (team_id, abbreviation, full_name, city, nickname)
-            VALUES (?, ?, ?, ?, ?)
-        """, (row['team_id'], row['abbreviation'], row['full_name'],
-              row['city'], row['nickname']))
-
-    conn.commit()
-    conn.close()
+        if IS_CLOUD:
+            execute_query("""
+                INSERT INTO teams (team_id, abbreviation, full_name, city, nickname)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (team_id) DO UPDATE SET
+                    abbreviation = EXCLUDED.abbreviation,
+                    full_name = EXCLUDED.full_name,
+                    city = EXCLUDED.city,
+                    nickname = EXCLUDED.nickname
+            """, (row['team_id'], row['abbreviation'], row['full_name'],
+                  row['city'], row['nickname']), fetch=False)
+        else:
+            execute_query("""
+                INSERT OR REPLACE INTO teams (team_id, abbreviation, full_name, city, nickname)
+                VALUES (?, ?, ?, ?, ?)
+            """, (row['team_id'], row['abbreviation'], row['full_name'],
+                  row['city'], row['nickname']), fetch=False)
 
     print(f"Fetched and stored {len(df)} teams.")
     return df
@@ -136,8 +144,6 @@ def process_and_store_games(games_df: pd.DataFrame, season: str):
 
     # Group by GAME_ID to get both teams' data
     game_groups = games_df.groupby('GAME_ID')
-
-    conn = get_db_connection()
     games_stored = 0
 
     for game_id, group in game_groups:
@@ -164,19 +170,32 @@ def process_and_store_games(games_df: pd.DataFrame, season: str):
         total_points = int(home_score + away_score)
 
         try:
-            conn.execute("""
-                INSERT OR REPLACE INTO games
-                (game_id, game_date, season, home_team_id, away_team_id,
-                 home_score, away_score, home_win, point_diff, total_points)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (str(game_id), game_date, season, home_team_id, away_team_id,
-                  home_score, away_score, home_win, point_diff, total_points))
+            if IS_CLOUD:
+                execute_query("""
+                    INSERT INTO games
+                    (game_id, game_date, season, home_team_id, away_team_id,
+                     home_score, away_score, home_win, point_diff, total_points)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (game_id) DO UPDATE SET
+                        home_score = EXCLUDED.home_score,
+                        away_score = EXCLUDED.away_score,
+                        home_win = EXCLUDED.home_win,
+                        point_diff = EXCLUDED.point_diff,
+                        total_points = EXCLUDED.total_points
+                """, (str(game_id), game_date, season, home_team_id, away_team_id,
+                      home_score, away_score, home_win, point_diff, total_points), fetch=False)
+            else:
+                execute_query("""
+                    INSERT OR REPLACE INTO games
+                    (game_id, game_date, season, home_team_id, away_team_id,
+                     home_score, away_score, home_win, point_diff, total_points)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (str(game_id), game_date, season, home_team_id, away_team_id,
+                      home_score, away_score, home_win, point_diff, total_points), fetch=False)
             games_stored += 1
         except Exception as e:
             print(f"Error storing game {game_id}: {e}")
 
-    conn.commit()
-    conn.close()
     print(f"Stored {games_stored} games for season {season}.")
 
 
@@ -230,25 +249,45 @@ def store_team_stats(stats: dict):
     if not stats:
         return
 
-    conn = get_db_connection()
-
     try:
-        conn.execute("""
-            INSERT OR REPLACE INTO team_stats
-            (team_id, season, games_played, wins, losses, win_pct,
-             pts_per_game, fg_pct, fg3_pct, ft_pct, reb_per_game,
-             ast_per_game, tov_per_game)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (stats['team_id'], stats['season'], stats.get('games_played'),
-              stats.get('wins'), stats.get('losses'), stats.get('win_pct'),
-              stats.get('pts_per_game'), stats.get('fg_pct'), stats.get('fg3_pct'),
-              stats.get('ft_pct'), stats.get('reb_per_game'), stats.get('ast_per_game'),
-              stats.get('tov_per_game')))
-        conn.commit()
+        if IS_CLOUD:
+            execute_query("""
+                INSERT INTO team_stats
+                (team_id, season, games_played, wins, losses, win_pct,
+                 pts_per_game, fg_pct, fg3_pct, ft_pct, reb_per_game,
+                 ast_per_game, tov_per_game)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (team_id, season) DO UPDATE SET
+                    games_played = EXCLUDED.games_played,
+                    wins = EXCLUDED.wins,
+                    losses = EXCLUDED.losses,
+                    win_pct = EXCLUDED.win_pct,
+                    pts_per_game = EXCLUDED.pts_per_game,
+                    fg_pct = EXCLUDED.fg_pct,
+                    fg3_pct = EXCLUDED.fg3_pct,
+                    ft_pct = EXCLUDED.ft_pct,
+                    reb_per_game = EXCLUDED.reb_per_game,
+                    ast_per_game = EXCLUDED.ast_per_game,
+                    tov_per_game = EXCLUDED.tov_per_game
+            """, (stats['team_id'], stats['season'], stats.get('games_played'),
+                  stats.get('wins'), stats.get('losses'), stats.get('win_pct'),
+                  stats.get('pts_per_game'), stats.get('fg_pct'), stats.get('fg3_pct'),
+                  stats.get('ft_pct'), stats.get('reb_per_game'), stats.get('ast_per_game'),
+                  stats.get('tov_per_game')), fetch=False)
+        else:
+            execute_query("""
+                INSERT OR REPLACE INTO team_stats
+                (team_id, season, games_played, wins, losses, win_pct,
+                 pts_per_game, fg_pct, fg3_pct, ft_pct, reb_per_game,
+                 ast_per_game, tov_per_game)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (stats['team_id'], stats['season'], stats.get('games_played'),
+                  stats.get('wins'), stats.get('losses'), stats.get('win_pct'),
+                  stats.get('pts_per_game'), stats.get('fg_pct'), stats.get('fg3_pct'),
+                  stats.get('ft_pct'), stats.get('reb_per_game'), stats.get('ast_per_game'),
+                  stats.get('tov_per_game')), fetch=False)
     except Exception as e:
         print(f"Error storing team stats: {e}")
-    finally:
-        conn.close()
 
 
 def fetch_schedule(date: str) -> pd.DataFrame:
@@ -275,22 +314,29 @@ def fetch_schedule(date: str) -> pd.DataFrame:
             return pd.DataFrame()
 
         # Store in schedule table
-        conn = get_db_connection()
-
         for _, row in games_df.iterrows():
             game_id = row['GAME_ID']
             home_team_id = row['HOME_TEAM_ID']
             away_team_id = row['VISITOR_TEAM_ID']
             game_status = row.get('GAME_STATUS_TEXT', 'Scheduled')
 
-            conn.execute("""
-                INSERT OR REPLACE INTO schedule
-                (game_id, game_date, home_team_id, away_team_id, status)
-                VALUES (?, ?, ?, ?, ?)
-            """, (game_id, date, home_team_id, away_team_id, game_status))
-
-        conn.commit()
-        conn.close()
+            if IS_CLOUD:
+                execute_query("""
+                    INSERT INTO schedule
+                    (game_id, game_date, home_team_id, away_team_id, status)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (game_id) DO UPDATE SET
+                        game_date = EXCLUDED.game_date,
+                        home_team_id = EXCLUDED.home_team_id,
+                        away_team_id = EXCLUDED.away_team_id,
+                        status = EXCLUDED.status
+                """, (game_id, date, home_team_id, away_team_id, game_status), fetch=False)
+            else:
+                execute_query("""
+                    INSERT OR REPLACE INTO schedule
+                    (game_id, game_date, home_team_id, away_team_id, status)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (game_id, date, home_team_id, away_team_id, game_status), fetch=False)
 
         return games_df
 
@@ -396,7 +442,7 @@ def get_scheduled_games(date: str) -> pd.DataFrame:
     Returns:
         DataFrame with scheduled games and team info
     """
-    conn = get_db_connection()
+    from .database import read_sql
 
     query = """
         SELECT
@@ -416,10 +462,7 @@ def get_scheduled_games(date: str) -> pd.DataFrame:
         WHERE s.game_date = ?
     """
 
-    df = pd.read_sql(query, conn, params=(date,))
-    conn.close()
-
-    return df
+    return read_sql(query, params=(date,))
 
 
 def get_historical_games(start_date: str, end_date: str) -> pd.DataFrame:
@@ -433,7 +476,7 @@ def get_historical_games(start_date: str, end_date: str) -> pd.DataFrame:
     Returns:
         DataFrame with historical games
     """
-    conn = get_db_connection()
+    from .database import read_sql
 
     query = """
         SELECT
@@ -449,10 +492,7 @@ def get_historical_games(start_date: str, end_date: str) -> pd.DataFrame:
         ORDER BY g.game_date DESC
     """
 
-    df = pd.read_sql(query, conn, params=(start_date, end_date))
-    conn.close()
-
-    return df
+    return read_sql(query, params=(start_date, end_date))
 
 
 if __name__ == "__main__":
