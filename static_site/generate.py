@@ -20,7 +20,7 @@ from src.database import execute_query, IS_CLOUD, test_connection
 # Configuration
 OUTPUT_DIR = Path(__file__).parent / "output"
 TEMPLATES_DIR = Path(__file__).parent / "templates"
-SITE_URL = "https://guangtoutong.github.io/nbaseer"
+SITE_URL = "https://nbaseer.com"
 SITE_NAME = "NBA先知 | NBAseer"
 
 
@@ -238,6 +238,14 @@ Sitemap: {SITE_URL}/sitemap.xml
     print(f"Generated: {output_path}")
 
 
+def generate_cname():
+    """Generate CNAME file for custom domain."""
+    domain = SITE_URL.replace('https://', '').replace('http://', '').split('/')[0]
+    output_path = OUTPUT_DIR / "CNAME"
+    output_path.write_text(domain, encoding='utf-8')
+    print(f"Generated: {output_path}")
+
+
 def generate_all():
     """Generate all static pages."""
     print("Starting static site generation...")
@@ -264,10 +272,11 @@ def generate_all():
         generate_daily_page(date, 'zh')
         generate_daily_page(date, 'en')
 
-    # Generate sitemap and robots.txt
+    # Generate sitemap, robots.txt, and CNAME
     print("\nGenerating SEO files...")
     generate_sitemap()
     generate_robots_txt()
+    generate_cname()
 
     print("\nStatic site generation complete!")
     return True
