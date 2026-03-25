@@ -253,6 +253,8 @@ def init_database():
     CREATE INDEX IF NOT EXISTS idx_predictions_game ON predictions(game_id);
     """
 
+    results = {'success': False, 'tables_created': [], 'errors': []}
+
     with get_db_connection() as conn:
         cursor = conn.cursor()
 
@@ -262,18 +264,26 @@ def init_database():
             for stmt in statements:
                 try:
                     cursor.execute(stmt)
+                    # Extract table name for logging
+                    if 'CREATE TABLE' in stmt.upper():
+                        table_name = stmt.split('EXISTS')[1].split('(')[0].strip() if 'EXISTS' in stmt.upper() else 'unknown'
+                        results['tables_created'].append(table_name)
                 except Exception as e:
+                    error_msg = str(e)
                     # Ignore "already exists" errors
-                    if 'already exists' not in str(e).lower():
-                        print(f"Warning: {e}")
+                    if 'already exists' not in error_msg.lower():
+                        results['errors'].append(error_msg)
         else:
             # SQLite: adapt syntax
             sqlite_sql = tables_sql.replace('SERIAL PRIMARY KEY', 'INTEGER PRIMARY KEY AUTOINCREMENT')
             cursor.executescript(sqlite_sql)
+            results['tables_created'] = ['teams', 'games', 'team_stats', 'schedule', 'predictions', 'odds']
 
         conn.commit()
+        results['success'] = True
 
-    print(f"Database initialized successfully ({'Cloud' if IS_CLOUD else 'Local'} mode)")
+    results['mode'] = 'Cloud' if IS_CLOUD else 'Local'
+    return results
 
 
 def get_database_mode() -> str:

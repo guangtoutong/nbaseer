@@ -200,9 +200,19 @@ def render_data_management(t: Translator):
         st.write("**" + t('init_database') + "**")
         if st.button(f"🗄️ {t('init_database')}", use_container_width=True):
             with st.spinner("Initializing database..."):
-                init_database()
-            st.success(t('success'))
-            st.rerun()
+                try:
+                    result = init_database()
+                    if result['success']:
+                        st.success(f"✅ {t('success')} - {len(result['tables_created'])} tables created")
+                        if result['errors']:
+                            st.warning(f"Warnings: {', '.join(result['errors'])}")
+                        with st.expander("Details"):
+                            st.json(result)
+                    else:
+                        st.error("❌ Initialization failed")
+                        st.json(result)
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
 
     with col2:
         st.write("**" + t('update_data') + "**")
