@@ -94,13 +94,21 @@ def check_system_status():
             with get_db_connection() as conn:
                 cursor = conn.cursor()
                 try:
-                    cursor.execute("SELECT COUNT(*) FROM teams")
-                    teams_count = cursor.fetchone()[0]
+                    cursor.execute("SELECT COUNT(*) as cnt FROM teams")
+                    row = cursor.fetchone()
+                    if isinstance(row, dict):
+                        teams_count = row.get('cnt', 0)
+                    else:
+                        teams_count = row[0] if row else 0
                 except:
                     pass
                 try:
-                    cursor.execute("SELECT COUNT(*) FROM games")
-                    games_count = cursor.fetchone()[0]
+                    cursor.execute("SELECT COUNT(*) as cnt FROM games")
+                    row = cursor.fetchone()
+                    if isinstance(row, dict):
+                        games_count = row.get('cnt', 0)
+                    else:
+                        games_count = row[0] if row else 0
                 except:
                     pass
             db_ok = teams_count > 0
