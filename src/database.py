@@ -13,6 +13,7 @@ import pandas as pd
 # Check if we're in cloud mode
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_DB_PASSWORD = os.environ.get('SUPABASE_DB_PASSWORD')
+DATABASE_URL = os.environ.get('DATABASE_URL')  # Full connection string (preferred)
 
 # Project paths for local mode
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -20,7 +21,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 DB_PATH = DATA_DIR / "nba.db"
 
 # Database mode
-IS_CLOUD = bool(SUPABASE_URL and SUPABASE_DB_PASSWORD)
+IS_CLOUD = bool(DATABASE_URL or (SUPABASE_URL and SUPABASE_DB_PASSWORD))
 
 
 def get_supabase_connection():
@@ -28,11 +29,19 @@ def get_supabase_connection():
     import psycopg2
     from psycopg2.extras import RealDictCursor
 
-    # Extract project ref from URL
-    # URL format: https://xxxxx.supabase.co
+    # Prefer DATABASE_URL if provided (connection pooler URL from Supabase dashboard)
+    if DATABASE_URL:
+        conn = psycopg2.connect(
+            DATABASE_URL,
+            cursor_factory=RealDictCursor
+        )
+        return conn
+
+    # Fallback: construct connection from SUPABASE_URL and password
+    # Extract project ref from URL: https://xxxxx.supabase.co
     project_ref = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '')
 
-    # Use direct connection with SSL mode (required for external connections)
+    # Use direct connection with SSL mode
     conn = psycopg2.connect(
         host=f"db.{project_ref}.supabase.co",
         port=5432,
