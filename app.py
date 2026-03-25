@@ -259,7 +259,9 @@ st.markdown("""
 def init_session_state():
     """Initialize session state variables."""
     if 'lang' not in st.session_state:
-        st.session_state.lang = 'zh'
+        # Check URL query parameter for language
+        query_lang = st.query_params.get('lang', 'zh')
+        st.session_state.lang = query_lang if query_lang in ['zh', 'en'] else 'zh'
     if 'selected_date' not in st.session_state:
         st.session_state.selected_date = datetime.now().date()
 
