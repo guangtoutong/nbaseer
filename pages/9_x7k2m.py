@@ -234,16 +234,27 @@ def render_data_management(t: Translator):
                     with get_db_connection() as conn:
                         cursor = conn.cursor()
                         counts = {}
-                        for table in ['teams', 'games', 'team_stats', 'schedule', 'predictions']:
-                            try:
+
+                        # First check what tables exist
+                        cursor.execute("""
+                            SELECT table_name FROM information_schema.tables
+                            WHERE table_schema = 'public'
+                        """)
+                        existing_tables = [row[0] for row in cursor.fetchall()]
+                        counts['_existing_tables'] = existing_tables
+
+                        # Then count records in each table
+                        for table in ['teams', 'games', 'team_stats', 'schedule', 'predictions', 'odds']:
+                            if table in existing_tables:
                                 cursor.execute(f"SELECT COUNT(*) FROM {table}")
                                 counts[table] = cursor.fetchone()[0]
-                            except Exception as e:
-                                counts[table] = f"Error: {e}"
+                            else:
+                                counts[table] = "TABLE NOT EXISTS"
+
                     st.success("✅ Data check complete")
                     st.json(counts)
                 except Exception as e:
-                    st.error(f"❌ Error: {e}")
+                    st.error(f"❌ Error: {str(e)}")
 
     st.divider()
 
