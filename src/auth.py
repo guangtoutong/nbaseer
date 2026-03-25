@@ -10,9 +10,22 @@ from .utils import load_config, save_config
 # Default admin email
 ADMIN_EMAIL = "guangtoutong@gmail.com"
 
-# Default password hash (password: "nbaseer2024")
-# In production, this should be changed on first login
-DEFAULT_PASSWORD_HASH = hashlib.sha256("nbaseer2024".encode()).hexdigest()
+# Default password (password: "nbaseer2024")
+DEFAULT_PASSWORD = "nbaseer2024"
+DEFAULT_PASSWORD_HASH = hashlib.sha256(DEFAULT_PASSWORD.encode()).hexdigest()
+
+
+def get_admin_password_from_secrets() -> Optional[str]:
+    """Get admin password from Streamlit secrets or environment."""
+    # Try Streamlit secrets first
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and 'ADMIN_PASSWORD' in st.secrets:
+            return st.secrets['ADMIN_PASSWORD']
+    except:
+        pass
+    # Try environment variable
+    return os.environ.get('ADMIN_PASSWORD')
 
 
 def hash_password(password: str) -> str:
@@ -22,6 +35,12 @@ def hash_password(password: str) -> str:
 
 def verify_password(password: str) -> bool:
     """Verify admin password."""
+    # Check secrets first (persistent across deployments)
+    secret_password = get_admin_password_from_secrets()
+    if secret_password:
+        return password == secret_password
+
+    # Fallback to config file (for local development)
     config = load_config()
     stored_hash = config.get('admin_password_hash', DEFAULT_PASSWORD_HASH)
     return hash_password(password) == stored_hash
