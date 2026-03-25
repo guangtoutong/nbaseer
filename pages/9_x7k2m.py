@@ -81,8 +81,24 @@ def render_login(t: Translator):
 
 def check_system_status():
     """Check system status."""
+    from src.database import IS_CLOUD, test_connection, execute_query
+
+    db_ok = False
+    if IS_CLOUD:
+        # Check if cloud database is connected and has tables
+        try:
+            result = test_connection()
+            if result['success']:
+                # Check if teams table has data
+                teams = execute_query("SELECT COUNT(*) as cnt FROM teams", fetch=True)
+                db_ok = teams and len(teams) > 0 and teams[0].get('cnt', 0) > 0
+        except:
+            db_ok = False
+    else:
+        db_ok = DB_PATH.exists()
+
     return {
-        'database': DB_PATH.exists(),
+        'database': db_ok,
         'model': NBAPredictor.model_exists(),
     }
 
