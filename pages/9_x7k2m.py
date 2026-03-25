@@ -170,7 +170,29 @@ def render_system_status(t: Translator):
 
 def render_data_management(t: Translator):
     """Render data management section."""
+    from src.database import test_connection, get_database_mode
+
     st.subheader(t('update_data'))
+
+    # Show database connection status
+    st.write("**Database Status**")
+    db_mode = get_database_mode()
+    st.info(f"Mode: {db_mode}")
+
+    # Test connection button
+    if st.button("🔍 Test Connection", use_container_width=True):
+        with st.spinner("Testing connection..."):
+            result = test_connection()
+
+        if result['success']:
+            st.success("✅ Connection successful!")
+        else:
+            st.error(f"❌ Connection failed: {result['error']}")
+
+        with st.expander("Connection Details"):
+            st.json(result)
+
+    st.divider()
 
     col1, col2 = st.columns(2)
 

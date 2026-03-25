@@ -11,9 +11,20 @@ from contextlib import contextmanager
 import pandas as pd
 
 # Check if we're in cloud mode
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_DB_PASSWORD = os.environ.get('SUPABASE_DB_PASSWORD')
-DATABASE_URL = os.environ.get('DATABASE_URL')  # Full connection string (preferred)
+# Try to get from Streamlit secrets first, then fall back to environment variables
+def get_secret(key: str, default=None):
+    """Get secret from Streamlit secrets or environment variables."""
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and key in st.secrets:
+            return st.secrets[key]
+    except:
+        pass
+    return os.environ.get(key, default)
+
+SUPABASE_URL = get_secret('SUPABASE_URL')
+SUPABASE_DB_PASSWORD = get_secret('SUPABASE_DB_PASSWORD')
+DATABASE_URL = get_secret('DATABASE_URL')  # Full connection string (preferred)
 
 # Project paths for local mode
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -42,16 +53,23 @@ def get_supabase_connection():
         user = unquote(parsed.username) if parsed.username else 'postgres'
         password = unquote(parsed.password) if parsed.password else ''
 
-        conn = psycopg2.connect(
-            host=host,
-            port=port,
-            database=database,
-            user=user,
-            password=password,
-            sslmode='require',
-            cursor_factory=RealDictCursor
-        )
-        return conn
+        try:
+            conn = psycopg2.connect(
+                host=host,
+                port=port,
+                database=database,
+                user=user,
+                password=password,
+                sslmode='require',
+                connect_timeout=10,
+                cursor_factory=RealDictCursor
+            )
+            return conn
+        except psycopg2.OperationalError as e:
+            # Re-raise with more context
+            raise psycopg2.OperationalError(
+                f"Failed to connect to database. Host={host}, Port={port}, User={user}, DB={database}. Error: {e}"
+            ) from e
 
     # Fallback: construct connection from SUPABASE_URL and password
     # Extract project ref from URL: https://xxxxx.supabase.co
@@ -270,3 +288,35 @@ def get_db_connection_compat():
         return get_supabase_connection()
     else:
         return get_sqlite_connection()
+
+
+def test_connection() -> dict:
+    """Test database connection and return status info."""
+    from urllib.parse import urlparse
+
+    result = {
+        'mode': 'Cloud' if IS_CLOUD else 'Local',
+        'database_url_set': bool(DATABASE_URL),
+        'success': False,
+        'error': None,
+        'details': {}
+    }
+
+    if DATABASE_URL:
+        parsed = urlparse(DATABASE_URL)
+        result['details'] = {
+            'host': parsed.hostname,
+            'port': parsed.port,
+            'user': parsed.username,
+            'database': parsed.path.lstrip('/'),
+        }
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            result['success'] = True
+    except Exception as e:
+        result['error'] = str(e)
+
+    return result
