@@ -28,18 +28,27 @@ def get_supabase_connection():
     """Get PostgreSQL connection to Supabase."""
     import psycopg2
     from psycopg2.extras import RealDictCursor
-    from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+    from urllib.parse import urlparse, unquote
 
     # Prefer DATABASE_URL if provided (connection pooler URL from Supabase dashboard)
     if DATABASE_URL:
-        # Ensure sslmode is set
-        db_url = DATABASE_URL
-        if 'sslmode=' not in db_url:
-            separator = '&' if '?' in db_url else '?'
-            db_url = f"{db_url}{separator}sslmode=require"
+        # Parse the URL into components for more reliable connection
+        parsed = urlparse(DATABASE_URL)
+
+        # Extract components
+        host = parsed.hostname
+        port = parsed.port or 6543
+        database = parsed.path.lstrip('/') or 'postgres'
+        user = unquote(parsed.username) if parsed.username else 'postgres'
+        password = unquote(parsed.password) if parsed.password else ''
 
         conn = psycopg2.connect(
-            db_url,
+            host=host,
+            port=port,
+            database=database,
+            user=user,
+            password=password,
+            sslmode='require',
             cursor_factory=RealDictCursor
         )
         return conn
