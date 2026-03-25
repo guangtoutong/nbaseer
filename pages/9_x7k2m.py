@@ -228,33 +228,49 @@ def render_data_management(t: Translator):
 
     with col_test2:
         if st.button("📊 Check Data", use_container_width=True):
-            from src.database import get_db_connection
+            from src.database import get_db_connection, IS_CLOUD
             with st.spinner("Checking data..."):
                 try:
                     with get_db_connection() as conn:
                         cursor = conn.cursor()
-                        counts = {}
+                        counts = {'_is_cloud': IS_CLOUD}
 
                         # First check what tables exist
-                        cursor.execute("""
-                            SELECT table_name FROM information_schema.tables
-                            WHERE table_schema = 'public'
-                        """)
-                        existing_tables = [row[0] for row in cursor.fetchall()]
+                        if IS_CLOUD:
+                            cursor.execute("""
+                                SELECT table_name FROM information_schema.tables
+                                WHERE table_schema = 'public'
+                            """)
+                            rows = cursor.fetchall()
+                            # Handle dict cursor
+                            if rows and isinstance(rows[0], dict):
+                                existing_tables = [row['table_name'] for row in rows]
+                            else:
+                                existing_tables = [row[0] for row in rows]
+                        else:
+                            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                            existing_tables = [row[0] for row in cursor.fetchall()]
+
                         counts['_existing_tables'] = existing_tables
 
                         # Then count records in each table
                         for table in ['teams', 'games', 'team_stats', 'schedule', 'predictions', 'odds']:
                             if table in existing_tables:
-                                cursor.execute(f"SELECT COUNT(*) FROM {table}")
-                                counts[table] = cursor.fetchone()[0]
+                                cursor.execute(f"SELECT COUNT(*) as cnt FROM {table}")
+                                row = cursor.fetchone()
+                                if isinstance(row, dict):
+                                    counts[table] = row.get('cnt', 0)
+                                else:
+                                    counts[table] = row[0] if row else 0
                             else:
                                 counts[table] = "TABLE NOT EXISTS"
 
                     st.success("✅ Data check complete")
                     st.json(counts)
                 except Exception as e:
+                    import traceback
                     st.error(f"❌ Error: {str(e)}")
+                    st.code(traceback.format_exc())
 
     st.divider()
 
