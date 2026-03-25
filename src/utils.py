@@ -176,7 +176,22 @@ def save_api_key(key_name: str, key_value: str):
 
 
 def load_api_key(key_name: str) -> Optional[str]:
-    """Load an API key from config."""
+    """Load an API key from config or Streamlit secrets."""
+    # Try Streamlit secrets first (persistent across deployments)
+    try:
+        import streamlit as st
+        if hasattr(st, 'secrets') and key_name in st.secrets:
+            return st.secrets[key_name]
+    except:
+        pass
+
+    # Try environment variable
+    import os
+    env_value = os.environ.get(key_name)
+    if env_value:
+        return env_value
+
+    # Fallback to config file (local development)
     config = load_config()
     return config.get(key_name)
 
