@@ -116,9 +116,19 @@ class NBAPredictor:
         if feature_names:
             self.feature_names = feature_names
 
-        # Split data
+        # Check label distribution before training
+        unique_labels = np.unique(y_win)
+        print(f"DEBUG: y_win unique labels: {unique_labels}, counts: {np.bincount(y_win.astype(int))}")
+
+        if len(unique_labels) < 2:
+            raise ValueError(
+                f"Training data must contain both win (1) and loss (0) labels. "
+                f"Found only: {unique_labels}. Check home_win values in database."
+            )
+
+        # Split data with stratification to ensure both classes in test set
         X_train, X_test, y_win_train, y_win_test = train_test_split(
-            X, y_win, test_size=test_size, random_state=42
+            X, y_win, test_size=test_size, random_state=42, stratify=y_win
         )
         _, _, y_spread_train, y_spread_test = train_test_split(
             X, y_spread, test_size=test_size, random_state=42
@@ -126,6 +136,9 @@ class NBAPredictor:
         _, _, y_total_train, y_total_test = train_test_split(
             X, y_total, test_size=test_size, random_state=42
         )
+
+        print(f"DEBUG: y_win_train distribution: {np.bincount(y_win_train.astype(int))}")
+        print(f"DEBUG: y_win_test distribution: {np.bincount(y_win_test.astype(int))}")
 
         # Train win model
         if progress_callback:
@@ -141,7 +154,7 @@ class NBAPredictor:
         self.win_metrics = {
             'accuracy': accuracy_score(y_win_test, y_win_pred),
             'auc': roc_auc_score(y_win_test, y_win_prob),
-            'log_loss': log_loss(y_win_test, y_win_prob)
+            'log_loss': log_loss(y_win_test, y_win_prob, labels=[0, 1])
         }
 
         # Train spread model
