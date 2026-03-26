@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.utils import init_database, DB_PATH, MODELS_DIR, save_api_key, load_api_key
-from src.data_collector import update_database
+from src.data_collector import update_database, fix_home_win_values
 from src.models import NBAPredictor, load_predictor
 from src.predictor import GamePredictor
 from src.feature_engineer import FeatureEngineer
@@ -279,6 +279,32 @@ def render_data_management(t: Translator):
                     import traceback
                     st.error(f"❌ Error: {str(e)}")
                     st.code(traceback.format_exc())
+
+    # Fix data button
+    col_fix1, col_fix2 = st.columns(2)
+    with col_fix1:
+        if st.button("🔧 Fix home_win Data", use_container_width=True):
+            with st.spinner("Fixing home_win values from scores..."):
+                try:
+                    from src.data_collector import fix_home_win_values
+                    result = fix_home_win_values()
+                    st.success("✅ home_win values fixed!")
+                    st.dataframe(result)
+                except Exception as e:
+                    import traceback
+                    st.error(f"❌ Error: {str(e)}")
+                    st.code(traceback.format_exc())
+
+    with col_fix2:
+        if st.button("📈 Check home_win Distribution", use_container_width=True):
+            with st.spinner("Checking..."):
+                try:
+                    from src.database import read_sql
+                    result = read_sql("SELECT home_win, COUNT(*) as cnt FROM games GROUP BY home_win ORDER BY home_win")
+                    st.success("home_win distribution:")
+                    st.dataframe(result)
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
 
     st.divider()
 

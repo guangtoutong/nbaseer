@@ -495,6 +495,41 @@ def get_historical_games(start_date: str, end_date: str) -> pd.DataFrame:
     return read_sql(query, params=(start_date, end_date))
 
 
+def fix_home_win_values():
+    """
+    Fix home_win values in the database by recalculating from scores.
+    Run this if home_win values are all 0.
+    """
+    from .database import read_sql, execute_query, IS_CLOUD
+
+    print("Checking current home_win distribution...")
+    result = read_sql("SELECT home_win, COUNT(*) as cnt FROM games GROUP BY home_win")
+    print(f"Current distribution: {result.to_dict()}")
+
+    print("Fixing home_win values from scores...")
+
+    if IS_CLOUD:
+        # PostgreSQL: Update all at once
+        execute_query("""
+            UPDATE games
+            SET home_win = CASE WHEN home_score > away_score THEN 1 ELSE 0 END
+            WHERE home_score IS NOT NULL AND away_score IS NOT NULL
+        """, fetch=False)
+    else:
+        # SQLite
+        execute_query("""
+            UPDATE games
+            SET home_win = CASE WHEN home_score > away_score THEN 1 ELSE 0 END
+            WHERE home_score IS NOT NULL AND away_score IS NOT NULL
+        """, fetch=False)
+
+    print("Verifying fix...")
+    result = read_sql("SELECT home_win, COUNT(*) as cnt FROM games GROUP BY home_win")
+    print(f"After fix distribution: {result.to_dict()}")
+
+    return result
+
+
 if __name__ == "__main__":
     # Run a full database update
     print("Starting full database update...")
