@@ -246,6 +246,14 @@ def generate_cname():
     print(f"Generated: {output_path}")
 
 
+def generate_ads_txt():
+    """Generate ads.txt for Google AdSense verification."""
+    content = "google.com, pub-7786364053868586, DIRECT, f08c47fec0942fa0\n"
+    output_path = OUTPUT_DIR / "ads.txt"
+    output_path.write_text(content, encoding='utf-8')
+    print(f"Generated: {output_path}")
+
+
 def generate_all():
     """Generate all static pages."""
     print("Starting static site generation...")
@@ -272,11 +280,12 @@ def generate_all():
         generate_daily_page(date, 'zh')
         generate_daily_page(date, 'en')
 
-    # Generate sitemap, robots.txt, and CNAME
+    # Generate sitemap, robots.txt, CNAME, and ads.txt
     print("\nGenerating SEO files...")
     generate_sitemap()
     generate_robots_txt()
     generate_cname()
+    generate_ads_txt()
 
     print("\nStatic site generation complete!")
     return True
