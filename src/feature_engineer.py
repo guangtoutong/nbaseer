@@ -47,19 +47,19 @@ class FeatureEngineer:
         if not self._all_games.empty:
             self._all_games['game_date'] = self._all_games['game_date'].astype(str)
 
-            # Handle home_win specially (might be boolean in PostgreSQL)
-            if 'home_win' in self._all_games.columns:
-                # Convert to int: True->1, False->0, 1->1, 0->0
-                self._all_games['home_win'] = self._all_games['home_win'].apply(
-                    lambda x: 1 if x in [True, 1, '1', 'true', 'True', 't', 'T'] else 0
-                )
-                print(f"DEBUG: home_win values after conversion: {self._all_games['home_win'].value_counts().to_dict()}")
-
-            # Ensure other numeric columns are numeric
+            # Ensure numeric columns are numeric first
             for col in ['home_team_id', 'away_team_id', 'home_score', 'away_score',
                         'point_diff', 'total_points']:
                 if col in self._all_games.columns:
                     self._all_games[col] = pd.to_numeric(self._all_games[col], errors='coerce').fillna(0)
+
+            # ALWAYS recalculate home_win from scores to ensure correctness
+            # This fixes issues where home_win was incorrectly stored as 0
+            self._all_games['home_win'] = (
+                self._all_games['home_score'] > self._all_games['away_score']
+            ).astype(int)
+
+            print(f"DEBUG: home_win recalculated from scores: {self._all_games['home_win'].value_counts().to_dict()}")
 
         return self._all_games
 
