@@ -43,9 +43,14 @@ class FeatureEngineer:
         """
         self._all_games = read_sql(query)
 
-        # Ensure game_date is string for comparison
+        # Ensure proper types
         if not self._all_games.empty:
             self._all_games['game_date'] = self._all_games['game_date'].astype(str)
+            # Ensure numeric columns are numeric
+            for col in ['home_team_id', 'away_team_id', 'home_score', 'away_score',
+                        'home_win', 'point_diff', 'total_points']:
+                if col in self._all_games.columns:
+                    self._all_games[col] = pd.to_numeric(self._all_games[col], errors='coerce').fillna(0)
 
         return self._all_games
 
@@ -181,25 +186,28 @@ class FeatureEngineer:
 
     def _calculate_streak(self, games: pd.DataFrame) -> float:
         """Calculate current win/loss streak. Positive = wins, negative = losses."""
-        if games.empty:
+        if games.empty or 'team_win' not in games.columns:
             return 0.0
 
         streak = 0
         try:
-            first_result = int(games.iloc[0]['team_win'])
-        except:
-            return 0.0
+            # Get the team_win values as a list
+            wins = games['team_win'].tolist()
+            if not wins:
+                return 0.0
 
-        for _, game in games.iterrows():
-            try:
-                if int(game['team_win']) == first_result:
+            first_result = 1 if float(wins[0]) > 0.5 else 0
+
+            for win_val in wins:
+                current_result = 1 if float(win_val) > 0.5 else 0
+                if current_result == first_result:
                     streak += 1
                 else:
                     break
-            except:
-                break
 
-        return float(streak) if first_result == 1 else float(-streak)
+            return float(streak) if first_result == 1 else float(-streak)
+        except Exception:
+            return 0.0
 
     def _default_team_features(self) -> Dict:
         """Return default features when no historical data available."""
@@ -379,18 +387,19 @@ class FeatureEngineer:
 
             try:
                 features = self.prepare_game_features(
-                    row['home_team_id'],
-                    row['away_team_id'],
-                    row['game_date']
+                    int(row['home_team_id']),
+                    int(row['away_team_id']),
+                    str(row['game_date'])
                 )
 
                 X_list.append(features.flatten())
-                y_win_list.append(row['home_win'])
-                y_spread_list.append(row['point_diff'])
-                y_total_list.append(row['total_points'])
+                # Ensure proper type conversion
+                y_win_list.append(1 if float(row['home_win']) > 0.5 else 0)
+                y_spread_list.append(float(row['point_diff']) if row['point_diff'] is not None else 0.0)
+                y_total_list.append(float(row['total_points']) if row['total_points'] is not None else 0.0)
 
             except Exception as e:
-                print(f"  Error processing game {row['game_id']}: {e}")
+                print(f"  Error processing game {row.get('game_id', idx)}: {e}")
                 continue
 
         if not X_list:
