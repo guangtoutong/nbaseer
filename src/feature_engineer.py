@@ -43,23 +43,50 @@ class FeatureEngineer:
         """
         self._all_games = read_sql(query)
 
-        # Ensure proper types
-        if not self._all_games.empty:
-            self._all_games['game_date'] = self._all_games['game_date'].astype(str)
+        if self._all_games.empty:
+            print("WARNING: No games loaded from database!")
+            return self._all_games
 
-            # Ensure numeric columns are numeric first
-            for col in ['home_team_id', 'away_team_id', 'home_score', 'away_score',
-                        'point_diff', 'total_points']:
-                if col in self._all_games.columns:
-                    self._all_games[col] = pd.to_numeric(self._all_games[col], errors='coerce').fillna(0)
+        # Debug: print raw data types and sample values
+        print(f"DEBUG: Loaded {len(self._all_games)} games")
+        print(f"DEBUG: Column types: {self._all_games.dtypes.to_dict()}")
+        print(f"DEBUG: First row sample: {self._all_games.iloc[0].to_dict()}")
 
-            # ALWAYS recalculate home_win from scores to ensure correctness
-            # This fixes issues where home_win was incorrectly stored as 0
-            self._all_games['home_win'] = (
-                self._all_games['home_score'] > self._all_games['away_score']
-            ).astype(int)
+        # Convert game_date to string
+        self._all_games['game_date'] = self._all_games['game_date'].astype(str)
 
-            print(f"DEBUG: home_win recalculated from scores: {self._all_games['home_win'].value_counts().to_dict()}")
+        # Convert scores to int explicitly - handle any format
+        def safe_int(val):
+            try:
+                if pd.isna(val) or val is None:
+                    return 0
+                return int(float(val))
+            except:
+                return 0
+
+        self._all_games['home_score'] = self._all_games['home_score'].apply(safe_int)
+        self._all_games['away_score'] = self._all_games['away_score'].apply(safe_int)
+        self._all_games['home_team_id'] = self._all_games['home_team_id'].apply(safe_int)
+        self._all_games['away_team_id'] = self._all_games['away_team_id'].apply(safe_int)
+        self._all_games['point_diff'] = self._all_games['point_diff'].apply(safe_int)
+        self._all_games['total_points'] = self._all_games['total_points'].apply(safe_int)
+
+        # Debug: print score statistics
+        print(f"DEBUG: home_score stats - min:{self._all_games['home_score'].min()}, max:{self._all_games['home_score'].max()}, mean:{self._all_games['home_score'].mean():.1f}")
+        print(f"DEBUG: away_score stats - min:{self._all_games['away_score'].min()}, max:{self._all_games['away_score'].max()}, mean:{self._all_games['away_score'].mean():.1f}")
+
+        # Calculate home_win from scores
+        self._all_games['home_win'] = (self._all_games['home_score'] > self._all_games['away_score']).astype(int)
+
+        # Debug: print home_win distribution
+        win_dist = self._all_games['home_win'].value_counts().to_dict()
+        print(f"DEBUG: home_win distribution: {win_dist}")
+
+        if len(win_dist) < 2:
+            print("ERROR: home_win has only one value! Checking data...")
+            # Print some games where scores differ
+            diff_games = self._all_games[self._all_games['home_score'] != self._all_games['away_score']].head(5)
+            print(f"DEBUG: Sample games with different scores:\n{diff_games[['game_id', 'home_score', 'away_score', 'home_win']].to_string()}")
 
         return self._all_games
 
