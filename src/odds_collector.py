@@ -796,31 +796,53 @@ def get_odds_for_display(date: str) -> pd.DataFrame:
     Returns:
         DataFrame with odds ready for display
     """
-    conn = get_db_connection()
+    from .database import read_sql, IS_CLOUD
 
-    query = """
-        SELECT
-            s.game_id,
-            s.game_date,
-            ht.full_name as home_team,
-            at.full_name as away_team,
-            o.home_odds as home_ml,
-            o.away_odds as away_ml,
-            o.spread_line as spread,
-            o.total_line as total,
-            o.over_odds,
-            o.under_odds,
-            o.fetched_at
-        FROM schedule s
-        JOIN teams ht ON s.home_team_id = ht.team_id
-        JOIN teams at ON s.away_team_id = at.team_id
-        LEFT JOIN odds o ON s.game_id = o.game_id
-        WHERE s.game_date = ?
-        GROUP BY s.game_id
-    """
+    # Use DISTINCT ON for PostgreSQL, or simple query for SQLite
+    if IS_CLOUD:
+        query = """
+            SELECT DISTINCT ON (s.game_id)
+                s.game_id,
+                s.game_date,
+                ht.full_name as home_team,
+                at.full_name as away_team,
+                o.home_odds as home_ml,
+                o.away_odds as away_ml,
+                o.spread_line as spread,
+                o.total_line as total,
+                o.over_odds,
+                o.under_odds,
+                o.fetched_at
+            FROM schedule s
+            JOIN teams ht ON s.home_team_id = ht.team_id
+            JOIN teams at ON s.away_team_id = at.team_id
+            LEFT JOIN odds o ON s.game_id = o.game_id
+            WHERE s.game_date = ?
+            ORDER BY s.game_id, o.fetched_at DESC NULLS LAST
+        """
+    else:
+        query = """
+            SELECT
+                s.game_id,
+                s.game_date,
+                ht.full_name as home_team,
+                at.full_name as away_team,
+                o.home_odds as home_ml,
+                o.away_odds as away_ml,
+                o.spread_line as spread,
+                o.total_line as total,
+                o.over_odds,
+                o.under_odds,
+                o.fetched_at
+            FROM schedule s
+            JOIN teams ht ON s.home_team_id = ht.team_id
+            JOIN teams at ON s.away_team_id = at.team_id
+            LEFT JOIN odds o ON s.game_id = o.game_id
+            WHERE s.game_date = ?
+            GROUP BY s.game_id
+        """
 
-    df = pd.read_sql(query, conn, params=(date,))
-    conn.close()
+    df = read_sql(query, params=(date,))
 
     # Calculate implied probabilities
     if not df.empty and 'home_ml' in df.columns:
