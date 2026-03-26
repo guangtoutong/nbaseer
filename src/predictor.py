@@ -107,6 +107,7 @@ class GamePredictor:
                 predictions.append({
                     'game_id': game['game_id'],
                     'game_date': date,
+                    'game_time': game.get('game_time', ''),
                     'home_team': game['home_name'],
                     'home_abbr': game['home_abbr'],
                     'away_team': game['away_name'],

@@ -20,6 +20,7 @@ from src.data_collector import fetch_schedule, get_scheduled_games
 from src.models import NBAPredictor
 from src.predictor import GamePredictor
 from src.i18n import Translator, LANGUAGES
+from src.styles import COMMON_CSS
 
 # Page configuration
 st.set_page_config(
@@ -41,219 +42,8 @@ st.markdown("""
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7786364053868586" crossorigin="anonymous"></script>
 """, unsafe_allow_html=True)
 
-# Custom CSS for better styling - Mobile first, hide sidebar
-st.markdown("""
-<style>
-    /* ===== HIDE SIDEBAR COMPLETELY ===== */
-    [data-testid="stSidebar"] {display: none !important;}
-    [data-testid="stSidebarNav"] {display: none !important;}
-    section[data-testid="stSidebar"] {display: none !important;}
-    .css-1d391kg {display: none !important;}
-    .st-emotion-cache-1gv3huu {display: none !important;}
-    button[kind="header"] {display: none !important;}
-
-    /* Hide hamburger menu and deploy button */
-    .stDeployButton {display: none !important;}
-    header[data-testid="stHeader"] {display: none !important;}
-    .stAppDeployButton {display: none !important;}
-    [data-testid="stToolbar"] {display: none !important;}
-    .viewerBadge_container__r5tak {display: none !important;}
-    .styles_viewerBadge__CvC9N {display: none !important;}
-
-    /* Hide Streamlit branding */
-    #MainMenu {display: none !important;}
-    footer {display: none !important;}
-
-    /* ===== BRAND HEADER ===== */
-    .brand-header {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-        padding: 1.5rem 1rem;
-        margin: -1rem -1rem 1rem -1rem;
-        text-align: center;
-        color: white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .brand-logo {
-        font-size: 2.8rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-        margin-bottom: 0.3rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-    }
-    .brand-slogan {
-        font-size: 0.95rem;
-        opacity: 0.9;
-        font-weight: 300;
-    }
-    .lang-switch {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-    }
-
-    /* ===== DATE NAVIGATION ===== */
-    .date-nav-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.8rem 0;
-        background: #f8f9fa;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-    }
-
-    /* ===== GAME CARDS - Mobile Optimized ===== */
-    .game-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem;
-        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-        color: white;
-        border-radius: 12px 12px 0 0;
-    }
-    .team-name {
-        font-size: 1.1rem;
-        font-weight: 600;
-    }
-    .team-abbr {
-        font-size: 0.75rem;
-        opacity: 0.8;
-    }
-    .vs-badge {
-        background: rgba(255,255,255,0.2);
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-    }
-
-    /* Probability bar */
-    .prob-bar {
-        display: flex;
-        width: 100%;
-        height: 36px;
-        border-radius: 0;
-        overflow: hidden;
-    }
-    .prob-away {
-        background: linear-gradient(90deg, #ff7f0e 0%, #ffab40 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 0.9rem;
-    }
-    .prob-home {
-        background: linear-gradient(90deg, #4fc3f7 0%, #1f77b4 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: bold;
-        font-size: 0.9rem;
-    }
-
-    /* Score display */
-    .score-display {
-        font-size: 1.3rem;
-        font-weight: bold;
-        text-align: center;
-        padding: 0.8rem;
-        background: #f8f9fa;
-        margin: 0;
-    }
-    .score-display b {
-        font-size: 1.5rem;
-        color: #1e3a5f;
-    }
-
-    /* Prediction metrics */
-    .pred-metrics {
-        display: flex;
-        justify-content: space-around;
-        padding: 0.8rem;
-        background: white;
-        border-radius: 0 0 12px 12px;
-        border: 1px solid #eee;
-        border-top: none;
-    }
-    .pred-item {
-        text-align: center;
-    }
-    .pred-label {
-        font-size: 0.7rem;
-        color: #666;
-        text-transform: uppercase;
-    }
-    .pred-value {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #1e3a5f;
-    }
-    .pred-conf {
-        font-size: 0.7rem;
-        color: #28a745;
-    }
-
-    /* Result badges */
-    .result-correct {
-        background: #d4edda;
-        color: #155724;
-        padding: 0.5rem;
-        text-align: center;
-        font-weight: 600;
-        margin-top: -1px;
-    }
-    .result-wrong {
-        background: #f8d7da;
-        color: #721c24;
-        padding: 0.5rem;
-        text-align: center;
-        font-weight: 600;
-        margin-top: -1px;
-    }
-
-    /* ===== FOOTER ===== */
-    .footer {
-        text-align: center;
-        padding: 2rem 1rem;
-        color: #666;
-        font-size: 0.75rem;
-        border-top: 1px solid #eee;
-        margin-top: 2rem;
-    }
-    .footer a {
-        color: #1e3a5f;
-        text-decoration: none;
-    }
-
-    /* ===== MOBILE RESPONSIVE ===== */
-    @media (max-width: 768px) {
-        .brand-logo {font-size: 2.2rem;}
-        .brand-slogan {font-size: 0.85rem;}
-        .team-name {font-size: 1rem;}
-        .score-display {font-size: 1.1rem;}
-        .score-display b {font-size: 1.3rem;}
-    }
-
-    /* Remove extra padding on mobile */
-    .block-container {
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-    .stApp > header {display: none;}
-
-    /* Streamlit element tweaks */
-    .stSelectbox > div > div {
-        background: transparent !important;
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 1rem !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Apply shared styles
+st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
 
 def init_session_state():
@@ -360,16 +150,27 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
     spread_team = home_name if game['predicted_spread'] > 0 else away_name
     spread_val = abs(game['predicted_spread'])
 
+    # Get game time
+    game_time = game.get('game_time', '')
+    if game_time:
+        # Convert to more readable format if needed
+        time_display = game_time
+    else:
+        time_display = ''
+
     # Build card using Streamlit components for better rendering
     with st.container(border=True):
-        # Team header
+        # Team header with game time
         st.markdown(f"""
         <div class="game-card-header">
             <div style="text-align: left;">
                 <div class="team-name">{away_name}</div>
                 <div class="team-abbr">{game['away_abbr']}</div>
             </div>
-            <div class="vs-badge">VS</div>
+            <div style="text-align: center;">
+                <div class="vs-badge">VS</div>
+                {f'<div style="font-size: 0.75rem; margin-top: 0.3rem; opacity: 0.9;">⏰ {time_display}</div>' if time_display else ''}
+            </div>
             <div style="text-align: right;">
                 <div class="team-name">{home_name}</div>
                 <div class="team-abbr">{game['home_abbr']}</div>
@@ -487,8 +288,23 @@ def render_games_list(t: Translator):
                     how='left'
                 )
 
-            # Display header
-            st.subheader(f"📅 {date_str} - {t('games_count', count=len(predictions))}")
+            # Display header with relative date indicator
+            today = datetime.now().date()
+            selected = st.session_state.selected_date
+            if selected == today:
+                date_label = "Today" if st.session_state.lang == 'en' else "今天"
+            elif selected == today + timedelta(days=1):
+                date_label = "Tomorrow" if st.session_state.lang == 'en' else "明天"
+            elif selected == today - timedelta(days=1):
+                date_label = "Yesterday" if st.session_state.lang == 'en' else "昨天"
+            else:
+                date_label = ""
+
+            header_text = f"📅 {date_str}"
+            if date_label:
+                header_text += f" ({date_label})"
+            header_text += f" - {t('games_count', count=len(predictions))}"
+            st.subheader(header_text)
 
             # Display games with inline ads every 4 games
             for idx, (_, game) in enumerate(predictions.iterrows()):

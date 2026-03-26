@@ -3,7 +3,7 @@ Shared styles for NBAseer application.
 统一的样式模块
 """
 
-# Common CSS for all pages
+# Common CSS for all pages - comprehensive styles
 COMMON_CSS = """
 <style>
     /* ===== HIDE SIDEBAR COMPLETELY ===== */
@@ -11,12 +11,16 @@ COMMON_CSS = """
     [data-testid="stSidebarNav"] {display: none !important;}
     section[data-testid="stSidebar"] {display: none !important;}
     .css-1d391kg {display: none !important;}
+    .st-emotion-cache-1gv3huu {display: none !important;}
     button[kind="header"] {display: none !important;}
 
     /* Hide hamburger menu and deploy button */
     .stDeployButton {display: none !important;}
     header[data-testid="stHeader"] {display: none !important;}
+    .stAppDeployButton {display: none !important;}
     [data-testid="stToolbar"] {display: none !important;}
+    .viewerBadge_container__r5tak {display: none !important;}
+    .styles_viewerBadge__CvC9N {display: none !important;}
 
     /* Hide Streamlit branding */
     #MainMenu {display: none !important;}
@@ -25,95 +29,147 @@ COMMON_CSS = """
     /* ===== BRAND HEADER ===== */
     .brand-header {
         background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
-        padding: 1.2rem 1rem;
+        padding: 1.5rem 1rem;
         margin: -1rem -1rem 1rem -1rem;
         text-align: center;
         color: white;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     .brand-logo {
-        font-size: 2rem;
+        font-size: 2.8rem;
         font-weight: 800;
         letter-spacing: -1px;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.3rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     }
     .brand-slogan {
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         opacity: 0.9;
         font-weight: 300;
     }
 
-    /* ===== NAVIGATION BAR ===== */
-    .nav-bar {
+    /* ===== DATE NAVIGATION ===== */
+    .date-nav-container {
         display: flex;
         justify-content: center;
-        gap: 1rem;
+        align-items: center;
+        gap: 0.5rem;
         padding: 0.8rem 0;
         background: #f8f9fa;
-        margin: -1rem -1rem 1rem -1rem;
-        border-bottom: 1px solid #e9ecef;
-        flex-wrap: wrap;
-    }
-    .nav-link {
-        padding: 0.5rem 1rem;
-        background: white;
-        border-radius: 20px;
-        text-decoration: none;
-        color: #1e3a5f;
-        font-weight: 500;
-        border: 1px solid #dee2e6;
-        transition: all 0.2s;
-    }
-    .nav-link:hover, .nav-link.active {
-        background: #1e3a5f;
-        color: white;
-        border-color: #1e3a5f;
-    }
-
-    /* ===== GAME CARDS ===== */
-    .game-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1rem;
+        border-radius: 10px;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        border: 1px solid #e9ecef;
-    }
-    .game-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
 
-    .team-row {
+    /* ===== GAME CARDS - Mobile Optimized ===== */
+    .game-card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.5rem 0;
+        padding: 1rem;
+        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
     }
     .team-name {
-        font-weight: 600;
         font-size: 1.1rem;
+        font-weight: 600;
     }
-    .team-score {
+    .team-abbr {
+        font-size: 0.75rem;
+        opacity: 0.8;
+    }
+    .vs-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+
+    /* Probability bar */
+    .prob-bar {
+        display: flex;
+        width: 100%;
+        height: 36px;
+        border-radius: 0;
+        overflow: hidden;
+    }
+    .prob-away {
+        background: linear-gradient(90deg, #ff7f0e 0%, #ffab40 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    .prob-home {
+        background: linear-gradient(90deg, #4fc3f7 0%, #1f77b4 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    /* Score display */
+    .score-display {
         font-size: 1.3rem;
-        font-weight: 700;
+        font-weight: bold;
+        text-align: center;
+        padding: 0.8rem;
+        background: #f8f9fa;
+        margin: 0;
+    }
+    .score-display b {
+        font-size: 1.5rem;
         color: #1e3a5f;
     }
 
-    .prediction-badge {
-        display: inline-block;
-        padding: 0.3rem 0.8rem;
-        border-radius: 15px;
-        font-size: 0.85rem;
-        font-weight: 600;
+    /* Prediction metrics */
+    .pred-metrics {
+        display: flex;
+        justify-content: space-around;
+        padding: 0.8rem;
+        background: white;
+        border-radius: 0 0 12px 12px;
+        border: 1px solid #eee;
+        border-top: none;
     }
-    .prediction-badge.win {
+    .pred-item {
+        text-align: center;
+    }
+    .pred-label {
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: uppercase;
+    }
+    .pred-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e3a5f;
+    }
+    .pred-conf {
+        font-size: 0.7rem;
+        color: #28a745;
+    }
+
+    /* Result badges */
+    .result-correct {
         background: #d4edda;
         color: #155724;
+        padding: 0.5rem;
+        text-align: center;
+        font-weight: 600;
+        margin-top: -1px;
     }
-    .prediction-badge.loss {
+    .result-wrong {
         background: #f8d7da;
         color: #721c24;
+        padding: 0.5rem;
+        text-align: center;
+        font-weight: 600;
+        margin-top: -1px;
     }
 
     /* ===== STATS CARDS ===== */
@@ -133,20 +189,33 @@ COMMON_CSS = """
         opacity: 0.9;
     }
 
+    /* ===== FOOTER ===== */
+    .footer {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #666;
+        font-size: 0.75rem;
+        border-top: 1px solid #eee;
+        margin-top: 2rem;
+    }
+    .footer a {
+        color: #1e3a5f;
+        text-decoration: none;
+    }
+
     /* ===== RESPONSIVE LAYOUT ===== */
+    @media (max-width: 768px) {
+        .brand-logo {font-size: 2.2rem;}
+        .brand-slogan {font-size: 0.85rem;}
+        .team-name {font-size: 1rem;}
+        .score-display {font-size: 1.1rem;}
+        .score-display b {font-size: 1.3rem;}
+    }
+
     @media (min-width: 768px) {
-        .brand-logo {
-            font-size: 2.5rem;
-        }
-        .brand-slogan {
-            font-size: 1rem;
-        }
-        .game-card {
-            padding: 1.5rem;
-        }
-        .team-name {
-            font-size: 1.2rem;
-        }
+        .brand-logo {font-size: 2.8rem;}
+        .brand-slogan {font-size: 1rem;}
+        .team-name {font-size: 1.2rem;}
     }
 
     @media (min-width: 1024px) {
@@ -163,35 +232,19 @@ COMMON_CSS = """
         }
     }
 
-    /* ===== RESULT INDICATORS ===== */
-    .result-correct {
-        color: #28a745;
-        font-weight: 600;
+    /* Remove extra padding on mobile */
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
     }
-    .result-wrong {
-        color: #dc3545;
-        font-weight: 600;
-    }
+    .stApp > header {display: none;}
 
-    /* ===== DATE NAVIGATION ===== */
-    .date-nav {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem 0;
+    /* Streamlit element tweaks */
+    .stSelectbox > div > div {
+        background: transparent !important;
     }
-    .date-btn {
-        padding: 0.5rem 1rem;
-        background: white;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-    .date-current {
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #1e3a5f;
+    div[data-testid="stMetricValue"] {
+        font-size: 1rem !important;
     }
 </style>
 """
@@ -222,71 +275,5 @@ def render_nav_bar(current_page: str = "home", lang: str = "zh"):
     return f"""
     <div class="nav-bar">
         {''.join(links)}
-    </div>
-    """
-
-
-def render_game_card(
-    home_team: str,
-    away_team: str,
-    home_score: int = None,
-    away_score: int = None,
-    win_prob: float = None,
-    predicted_spread: float = None,
-    predicted_total: float = None,
-    is_correct: bool = None,
-    lang: str = "zh"
-):
-    """Render a game card."""
-    # Score display
-    score_html = ""
-    if home_score is not None and away_score is not None:
-        score_html = f"""
-        <div class="team-row">
-            <span class="team-name">{away_team}</span>
-            <span class="team-score">{away_score}</span>
-        </div>
-        <div class="team-row">
-            <span class="team-name">{home_team}</span>
-            <span class="team-score">{home_score}</span>
-        </div>
-        """
-    else:
-        score_html = f"""
-        <div class="team-row">
-            <span class="team-name">{away_team}</span>
-            <span class="team-score">@</span>
-        </div>
-        <div class="team-row">
-            <span class="team-name">{home_team}</span>
-            <span class="team-score"></span>
-        </div>
-        """
-
-    # Prediction display
-    pred_html = ""
-    if win_prob is not None:
-        winner = home_team if win_prob > 0.5 else away_team
-        prob = win_prob if win_prob > 0.5 else (1 - win_prob)
-        pred_label = "Prediction" if lang == "en" else "预测"
-        pred_html = f"""
-        <div style="margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid #e9ecef;">
-            <strong>{pred_label}:</strong> {winner} ({prob*100:.0f}%)
-        </div>
-        """
-
-    # Result badge
-    result_html = ""
-    if is_correct is not None:
-        if is_correct:
-            result_html = '<span class="prediction-badge win">✓ Correct</span>'
-        else:
-            result_html = '<span class="prediction-badge loss">✗ Wrong</span>'
-
-    return f"""
-    <div class="game-card">
-        {score_html}
-        {pred_html}
-        {result_html}
     </div>
     """
