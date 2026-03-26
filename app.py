@@ -161,7 +161,7 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
     # Build card using Streamlit components for better rendering
     with st.container(border=True):
         # Team header with game time
-        time_html = f'<div style="font-size: 0.75rem; margin-top: 0.3rem; opacity: 0.9;">⏰ {time_display}</div>' if time_display else ''
+        time_html = f'<div style="font-size: 0.75rem; margin-top: 0.3rem; opacity: 0.9;">⏰ {time_display} ET</div>' if time_display else ''
         header_html = f'''<div class="game-card-header"><div style="text-align: left;"><div class="team-name">{away_name}</div><div class="team-abbr">{game['away_abbr']}</div></div><div style="text-align: center;"><div class="vs-badge">VS</div>{time_html}</div><div style="text-align: right;"><div class="team-name">{home_name}</div><div class="team-abbr">{game['home_abbr']}</div></div></div>'''
         st.markdown(header_html, unsafe_allow_html=True)
 
