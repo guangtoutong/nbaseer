@@ -490,6 +490,26 @@ def render_model_training(t: Translator):
                     f"{metrics['total']['mae']:.1f}"
                 )
 
+            # Provide download button for the model
+            if save_model:
+                model_path = os.path.join(MODELS_DIR, 'nba_predictor_latest.pkl')
+                if os.path.exists(model_path):
+                    with open(model_path, 'rb') as f:
+                        model_bytes = f.read()
+                    st.download_button(
+                        label="📥 Download Model File" if st.session_state.lang == 'en' else "📥 下载模型文件",
+                        data=model_bytes,
+                        file_name="nba_predictor_latest.pkl",
+                        mime="application/octet-stream",
+                        help="Download and commit to models/ folder in your repo" if st.session_state.lang == 'en'
+                             else "下载后放到仓库的 models/ 文件夹并提交"
+                    )
+                    st.info(
+                        "**Important:** Download this file and commit it to `models/nba_predictor_latest.pkl` in your Git repo to persist the model across deployments."
+                        if st.session_state.lang == 'en' else
+                        "**重要：** 下载此文件并提交到 Git 仓库的 `models/nba_predictor_latest.pkl`，这样模型就会永久保存。"
+                    )
+
         except Exception as e:
             st.error(f"{t('error')}: {e}")
             import traceback

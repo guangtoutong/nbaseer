@@ -14,8 +14,12 @@ pip-delete-this-directory.txt
 data/*.db
 data/*.sqlite
 data/config.json
-models/*.pkl
+
+# Models - keep the latest model for deployment
 models/*.joblib
+# Exclude versioned models but keep latest
+models/nba_predictor_2*.pkl
+!models/nba_predictor_latest.pkl
 
 # IDE
 .idea/
