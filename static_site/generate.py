@@ -5,7 +5,7 @@ Generates SEO-friendly static HTML pages for predictions and results.
 
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict, Optional
 import sys
@@ -31,6 +31,7 @@ def get_predictions_for_date(date: str) -> List[Dict]:
             p.*,
             s.home_team_id,
             s.away_team_id,
+            s.game_time,
             ht.abbreviation as home_abbr,
             ht.full_name as home_name,
             at.abbreviation as away_abbr,
@@ -44,7 +45,7 @@ def get_predictions_for_date(date: str) -> List[Dict]:
         LEFT JOIN teams at ON s.away_team_id = at.team_id
         LEFT JOIN games g ON p.game_id = g.game_id
         WHERE DATE(p.prediction_date) = ?
-        ORDER BY p.prediction_date
+        ORDER BY s.game_time, p.prediction_date
     """
 
     try:
@@ -101,12 +102,14 @@ def generate_page(template_name: str, output_path: Path, context: Dict):
     env = Environment(loader=FileSystemLoader(str(TEMPLATES_DIR)))
     template = env.get_template(template_name)
 
-    # Add common context
+    # Add common context - use Beijing time (UTC+8)
+    beijing_tz = timezone(timedelta(hours=8))
+    beijing_time = datetime.now(beijing_tz)
     context.update({
         'site_url': SITE_URL,
         'site_name': SITE_NAME,
-        'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'current_year': datetime.now().year,
+        'generated_at': beijing_time.strftime('%Y-%m-%d %H:%M:%S') + ' (北京时间)',
+        'current_year': beijing_time.year,
     })
 
     html = template.render(**context)
