@@ -1,6 +1,7 @@
 """
 Feature Engineering Module.
 Transforms raw data into features for prediction models.
+Optimized for cloud database - preloads all data to memory.
 """
 
 from datetime import datetime, timedelta
@@ -9,8 +10,6 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from .utils import get_db_connection, calculate_rest_days, is_back_to_back
-
 
 class FeatureEngineer:
     """Feature engineering for NBA game predictions."""
@@ -18,44 +17,106 @@ class FeatureEngineer:
     def __init__(self):
         self.scaler = StandardScaler()
         self.feature_names = []
+        self._all_games = None  # Cache for all games
+
+    def _load_all_games(self):
+        """Load all games into memory once."""
+        if self._all_games is not None:
+            return self._all_games
+
+        from .database import read_sql
+
+        query = """
+            SELECT
+                g.game_id,
+                g.game_date,
+                g.home_team_id,
+                g.away_team_id,
+                g.home_score,
+                g.away_score,
+                g.home_win,
+                g.point_diff,
+                g.total_points
+            FROM games g
+            WHERE g.home_score IS NOT NULL
+            ORDER BY g.game_date
+        """
+        self._all_games = read_sql(query)
+
+        # Ensure game_date is string for comparison
+        if not self._all_games.empty:
+            self._all_games['game_date'] = self._all_games['game_date'].astype(str)
+
+        return self._all_games
+
+    def _get_team_games_before_date(self, team_id: int, as_of_date: str) -> pd.DataFrame:
+        """Get all games for a team before a specific date from cached data."""
+        all_games = self._load_all_games()
+
+        # Filter games for this team before the date
+        mask = (
+            ((all_games['home_team_id'] == team_id) | (all_games['away_team_id'] == team_id)) &
+            (all_games['game_date'] < as_of_date)
+        )
+        team_games = all_games[mask].copy()
+
+        if team_games.empty:
+            return team_games
+
+        # Add computed columns
+        team_games['location'] = team_games.apply(
+            lambda x: 'home' if x['home_team_id'] == team_id else 'away', axis=1
+        )
+        team_games['team_score'] = team_games.apply(
+            lambda x: x['home_score'] if x['home_team_id'] == team_id else x['away_score'], axis=1
+        )
+        team_games['opp_score'] = team_games.apply(
+            lambda x: x['away_score'] if x['home_team_id'] == team_id else x['home_score'], axis=1
+        )
+        team_games['team_win'] = team_games.apply(
+            lambda x: x['home_win'] if x['home_team_id'] == team_id else (1 - x['home_win']), axis=1
+        )
+
+        # Sort by date descending (most recent first)
+        team_games = team_games.sort_values('game_date', ascending=False)
+
+        return team_games
+
+    def _calculate_rest_days_from_cache(self, team_id: int, as_of_date: str) -> int:
+        """Calculate rest days from cached data."""
+        all_games = self._load_all_games()
+
+        # Find last game before this date
+        mask = (
+            ((all_games['home_team_id'] == team_id) | (all_games['away_team_id'] == team_id)) &
+            (all_games['game_date'] < as_of_date)
+        )
+        team_games = all_games[mask]
+
+        if team_games.empty:
+            return 7  # Default
+
+        last_game_date = team_games['game_date'].max()
+
+        try:
+            last_game = datetime.strptime(str(last_game_date)[:10], '%Y-%m-%d')
+            current_game = datetime.strptime(str(as_of_date)[:10], '%Y-%m-%d')
+            return (current_game - last_game).days
+        except:
+            return 2  # Default
 
     def calculate_team_features(self, team_id: int, as_of_date: str) -> Dict:
         """
         Calculate features for a single team as of a specific date.
-
-        Args:
-            team_id: NBA team ID
-            as_of_date: Date string 'YYYY-MM-DD'
-
-        Returns:
-            Dictionary with team features
+        Uses cached data for performance.
         """
-        from .database import read_sql
-
-        # Get all games before this date for the team
-        query = """
-            SELECT
-                g.*,
-                CASE WHEN g.home_team_id = ? THEN 'home' ELSE 'away' END as location,
-                CASE WHEN g.home_team_id = ? THEN g.home_score ELSE g.away_score END as team_score,
-                CASE WHEN g.home_team_id = ? THEN g.away_score ELSE g.home_score END as opp_score,
-                CASE WHEN g.home_team_id = ? THEN g.home_win ELSE (1 - g.home_win) END as team_win
-            FROM games g
-            WHERE (g.home_team_id = ? OR g.away_team_id = ?)
-            AND g.game_date < ?
-            ORDER BY g.game_date DESC
-        """
-
-        games = read_sql(query, params=(
-            team_id, team_id, team_id, team_id, team_id, team_id, as_of_date
-        ))
+        games = self._get_team_games_before_date(team_id, as_of_date)
 
         if games.empty:
             return self._default_team_features()
 
         features = {}
 
-        # Helper function to safely convert to float
         def safe_float(val, default=0.0):
             try:
                 if val is None or (isinstance(val, float) and np.isnan(val)):
@@ -108,12 +169,13 @@ class FeatureEngineer:
         features['opp_pts_std'] = safe_float(games['opp_score'].std() if len(games) > 1 else 10, 10)
 
         # Total points tendency
-        games['total_pts'] = games['team_score'] + games['opp_score']
-        features['total_pts_avg'] = safe_float(games['total_pts'].mean(), 220)
+        total_pts = games['team_score'] + games['opp_score']
+        features['total_pts_avg'] = safe_float(total_pts.mean(), 220)
 
-        # Rest days
-        features['rest_days'] = safe_float(calculate_rest_days(team_id, as_of_date), 2)
-        features['is_b2b'] = 1.0 if is_back_to_back(team_id, as_of_date) else 0.0
+        # Rest days (from cache)
+        rest_days = self._calculate_rest_days_from_cache(team_id, as_of_date)
+        features['rest_days'] = float(rest_days)
+        features['is_b2b'] = 1.0 if rest_days == 1 else 0.0
 
         return features
 
@@ -166,40 +228,22 @@ class FeatureEngineer:
         away_team_id: int,
         as_of_date: str
     ) -> Dict:
-        """
-        Calculate head-to-head features for a matchup.
-
-        Args:
-            home_team_id: Home team ID
-            away_team_id: Away team ID
-            as_of_date: Date string 'YYYY-MM-DD'
-
-        Returns:
-            Dictionary with matchup features
-        """
-        from .database import read_sql
+        """Calculate head-to-head features for a matchup using cached data."""
+        all_games = self._load_all_games()
 
         # Get historical matchups
-        query = """
-            SELECT
-                g.*,
-                CASE WHEN g.home_team_id = ? THEN 1 ELSE 0 END as is_home
-            FROM games g
-            WHERE ((g.home_team_id = ? AND g.away_team_id = ?)
-                   OR (g.home_team_id = ? AND g.away_team_id = ?))
-            AND g.game_date < ?
-            ORDER BY g.game_date DESC
-            LIMIT 10
-        """
-
-        h2h = read_sql(query, params=(
-            home_team_id, home_team_id, away_team_id,
-            away_team_id, home_team_id, as_of_date
-        ))
+        mask = (
+            (
+                ((all_games['home_team_id'] == home_team_id) & (all_games['away_team_id'] == away_team_id)) |
+                ((all_games['home_team_id'] == away_team_id) & (all_games['away_team_id'] == home_team_id))
+            ) &
+            (all_games['game_date'] < as_of_date)
+        )
+        h2h = all_games[mask].copy()
+        h2h = h2h.sort_values('game_date', ascending=False).head(10)
 
         features = {}
 
-        # Helper function to safely convert to float
         def safe_float(val, default=0.0):
             try:
                 if val is None or (isinstance(val, float) and np.isnan(val)):
@@ -215,6 +259,9 @@ class FeatureEngineer:
             features['h2h_avg_total'] = 220.0
         else:
             features['h2h_games'] = float(len(h2h))
+
+            # Add is_home column
+            h2h['is_home'] = (h2h['home_team_id'] == home_team_id).astype(int)
 
             # Home team's win rate in head-to-head
             home_wins = safe_float(h2h[h2h['is_home'] == 1]['home_win'].sum(), 0)
@@ -239,17 +286,10 @@ class FeatureEngineer:
         away_team_id: int,
         game_date: str
     ) -> np.ndarray:
-        """
-        Prepare all features for a single game prediction.
+        """Prepare all features for a single game prediction."""
+        # Ensure date is string
+        game_date = str(game_date)[:10]
 
-        Args:
-            home_team_id: Home team ID
-            away_team_id: Away team ID
-            game_date: Game date string 'YYYY-MM-DD'
-
-        Returns:
-            NumPy array of features
-        """
         # Get team features
         home_features = self.calculate_team_features(home_team_id, game_date)
         away_features = self.calculate_team_features(away_team_id, game_date)
@@ -303,44 +343,26 @@ class FeatureEngineer:
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Prepare training data from historical games.
-
-        Args:
-            start_date: Start date for training data
-            end_date: End date for training data
-            min_games: Minimum games each team should have played
-
-        Returns:
-            Tuple of (X, y_win, y_spread, y_total)
+        Optimized: loads all data once, then processes in memory.
         """
-        from .database import read_sql, IS_CLOUD
+        print("Loading all games into memory...")
+        all_games = self._load_all_games()
 
-        # Get historical games
-        query = """
-            SELECT
-                g.game_id,
-                g.game_date,
-                g.home_team_id,
-                g.away_team_id,
-                g.home_win,
-                g.point_diff,
-                g.total_points
-            FROM games g
-            WHERE g.home_score IS NOT NULL
-        """
+        if all_games.empty:
+            print("No games found in database!")
+            return np.array([]), np.array([]), np.array([]), np.array([])
 
-        params = []
+        print(f"Loaded {len(all_games)} games into memory.")
+
+        # Filter by date if specified
+        games = all_games.copy()
         if start_date:
-            query += " AND g.game_date >= ?"
-            params.append(start_date)
+            games = games[games['game_date'] >= start_date]
         if end_date:
-            query += " AND g.game_date <= ?"
-            params.append(end_date)
-
-        query += " ORDER BY g.game_date"
-
-        games = read_sql(query, params=tuple(params) if params else None)
+            games = games[games['game_date'] <= end_date]
 
         if games.empty:
+            print("No games in specified date range!")
             return np.array([]), np.array([]), np.array([]), np.array([])
 
         X_list = []
@@ -348,11 +370,12 @@ class FeatureEngineer:
         y_spread_list = []
         y_total_list = []
 
-        print(f"Processing {len(games)} games for training data...")
+        total_games = len(games)
+        print(f"Processing {total_games} games for training data...")
 
-        for i, row in games.iterrows():
-            if i % 100 == 0:
-                print(f"  Processing game {i+1}/{len(games)}...")
+        for i, (idx, row) in enumerate(games.iterrows()):
+            if i % 500 == 0:
+                print(f"  Processing game {i+1}/{total_games} ({100*i//total_games}%)...")
 
             try:
                 features = self.prepare_game_features(
@@ -371,6 +394,7 @@ class FeatureEngineer:
                 continue
 
         if not X_list:
+            print("No valid training samples generated!")
             return np.array([]), np.array([]), np.array([]), np.array([])
 
         # Ensure proper float types for XGBoost
@@ -384,42 +408,18 @@ class FeatureEngineer:
         return X, y_win, y_spread, y_total
 
     def fit_scaler(self, X: np.ndarray) -> np.ndarray:
-        """
-        Fit the scaler and transform features.
-
-        Args:
-            X: Feature matrix
-
-        Returns:
-            Scaled feature matrix
-        """
+        """Fit the scaler and transform features."""
         return self.scaler.fit_transform(X)
 
     def transform(self, X: np.ndarray) -> np.ndarray:
-        """
-        Transform features using fitted scaler.
-
-        Args:
-            X: Feature matrix
-
-        Returns:
-            Scaled feature matrix
-        """
+        """Transform features using fitted scaler."""
         return self.scaler.transform(X)
 
     def get_feature_importance_df(
         self,
         importances: np.ndarray
     ) -> pd.DataFrame:
-        """
-        Create a DataFrame of feature importances.
-
-        Args:
-            importances: Array of feature importances
-
-        Returns:
-            DataFrame sorted by importance
-        """
+        """Create a DataFrame of feature importances."""
         df = pd.DataFrame({
             'feature': self.feature_names,
             'importance': importances
@@ -431,16 +431,7 @@ def get_training_data(
     seasons: Optional[List[str]] = None,
     progress_callback=None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """
-    Convenience function to get training data.
-
-    Args:
-        seasons: List of seasons to include
-        progress_callback: Optional callback for progress updates
-
-    Returns:
-        Tuple of (X, y_win, y_spread, y_total)
-    """
+    """Convenience function to get training data."""
     engineer = FeatureEngineer()
 
     if progress_callback:
