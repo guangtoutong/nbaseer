@@ -239,29 +239,40 @@ class GamePredictor:
 
     def store_predictions(self, predictions: pd.DataFrame):
         """Store predictions in database for tracking."""
+        from .database import execute_query, IS_CLOUD
+
         if predictions.empty:
             return
 
-        conn = get_db_connection()
-
         for _, row in predictions.iterrows():
             try:
-                conn.execute("""
-                    INSERT INTO predictions
-                    (game_id, home_win_prob, predicted_spread, predicted_total, model_version)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (
-                    row['game_id'],
-                    row['home_win_prob'],
-                    row['predicted_spread'],
-                    row['predicted_total'],
-                    self.model.model_version if self.model else None
-                ))
+                if IS_CLOUD:
+                    execute_query("""
+                        INSERT INTO predictions
+                        (game_id, home_win_prob, predicted_spread, predicted_total, model_version)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT DO NOTHING
+                    """, (
+                        row['game_id'],
+                        row['home_win_prob'],
+                        row['predicted_spread'],
+                        row['predicted_total'],
+                        self.model.model_version if self.model else None
+                    ), fetch=False)
+                else:
+                    execute_query("""
+                        INSERT OR IGNORE INTO predictions
+                        (game_id, home_win_prob, predicted_spread, predicted_total, model_version)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        row['game_id'],
+                        row['home_win_prob'],
+                        row['predicted_spread'],
+                        row['predicted_total'],
+                        self.model.model_version if self.model else None
+                    ), fetch=False)
             except Exception as e:
                 print(f"Error storing prediction: {e}")
-
-        conn.commit()
-        conn.close()
 
     def get_prediction_history(
         self,
@@ -278,11 +289,12 @@ class GamePredictor:
         Returns:
             DataFrame with predictions and actuals
         """
-        conn = get_db_connection()
+        from .database import read_sql
 
         query = """
             SELECT
-                p.*,
+                p.id, p.game_id, p.prediction_date, p.home_win_prob,
+                p.predicted_spread, p.predicted_total, p.model_version,
                 g.home_win as actual_home_win,
                 g.point_diff as actual_spread,
                 g.total_points as actual_total,
@@ -306,8 +318,7 @@ class GamePredictor:
 
         query += " ORDER BY g.game_date DESC"
 
-        df = pd.read_sql(query, conn, params=params)
-        conn.close()
+        df = read_sql(query, params=tuple(params) if params else None)
 
         if not df.empty:
             # Calculate accuracy metrics
@@ -361,16 +372,17 @@ class GamePredictor:
         process_and_store_games(games_df, season)
 
         # Count how many predictions now have results
-        conn = get_db_connection()
-        result = conn.execute("""
+        from .database import read_sql
+        result = read_sql("""
             SELECT COUNT(*) as count FROM predictions p
             JOIN games g ON p.game_id = g.game_id
             WHERE g.home_score IS NOT NULL
-        """).fetchone()
-        conn.close()
+        """)
+
+        count = result.iloc[0]['count'] if not result.empty else 0
 
         return {
-            'updated': result['count'] if result else 0,
+            'updated': count,
             'message': '比赛结果已更新'
         }
 
@@ -384,7 +396,7 @@ class GamePredictor:
         Returns:
             DataFrame with predictions and actual results
         """
-        conn = get_db_connection()
+        from .database import read_sql
 
         query = """
             SELECT
@@ -416,8 +428,7 @@ class GamePredictor:
 
         query += " ORDER BY g.game_date DESC, p.id DESC"
 
-        df = pd.read_sql(query, conn, params=params if params else None)
-        conn.close()
+        df = read_sql(query, params=tuple(params) if params else None)
 
         if not df.empty:
             # Add Chinese names
