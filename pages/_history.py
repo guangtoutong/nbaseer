@@ -32,6 +32,11 @@ st.set_page_config(
 # Apply common styles
 st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
+# AdSense verification script
+st.markdown("""
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7786364053868586" crossorigin="anonymous"></script>
+""", unsafe_allow_html=True)
+
 
 def init_session_state():
     """Initialize session state."""

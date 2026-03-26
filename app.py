@@ -38,7 +38,7 @@ st.markdown("""
 <meta name="apple-mobile-web-app-title" content="NBAseer">
 <meta name="description" content="NBA Game Prediction System - Data Insights, Game Predictions">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7786364053868586" crossorigin="anonymous"></script>
 """, unsafe_allow_html=True)
 
 # Custom CSS for better styling - Mobile first, hide sidebar
