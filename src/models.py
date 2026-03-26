@@ -275,15 +275,12 @@ class NBAPredictor:
 
     def save_model(self, path: Optional[str] = None):
         """
-        Save trained models to disk.
+        Save trained models to disk or database (cloud mode).
 
         Args:
-            path: Optional path to save directory
+            path: Optional path to save directory (ignored in cloud mode)
         """
-        if path is None:
-            path = MODELS_DIR
-
-        os.makedirs(path, exist_ok=True)
+        from .database import IS_CLOUD, execute_query
 
         model_data = {
             'win_model': self.win_model,
@@ -297,36 +294,105 @@ class NBAPredictor:
             'model_version': self.model_version
         }
 
-        filename = os.path.join(path, f'nba_predictor_{self.model_version}.pkl')
+        if IS_CLOUD:
+            # Save to database
+            import psycopg2
+            from .database import DATABASE_URL
+            from urllib.parse import urlparse, unquote
 
-        with open(filename, 'wb') as f:
-            pickle.dump(model_data, f)
+            model_bytes = pickle.dumps(model_data)
 
-        # Also save as latest
-        latest_path = os.path.join(path, 'nba_predictor_latest.pkl')
-        with open(latest_path, 'wb') as f:
-            pickle.dump(model_data, f)
+            parsed = urlparse(DATABASE_URL)
+            conn = psycopg2.connect(
+                host=parsed.hostname,
+                port=parsed.port or 6543,
+                database=parsed.path.lstrip('/') or 'postgres',
+                user=unquote(parsed.username) if parsed.username else 'postgres',
+                password=unquote(parsed.password) if parsed.password else '',
+                sslmode='require'
+            )
+            cursor = conn.cursor()
 
-        print(f"Model saved to {filename}")
-        return filename
+            # Upsert model data
+            cursor.execute("""
+                INSERT INTO models (model_name, model_data, updated_at)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (model_name) DO UPDATE SET
+                    model_data = EXCLUDED.model_data,
+                    updated_at = CURRENT_TIMESTAMP
+            """, ('nba_predictor_latest', psycopg2.Binary(model_bytes)))
+
+            conn.commit()
+            conn.close()
+            print(f"Model saved to database (version: {self.model_version})")
+            return "database"
+        else:
+            # Save to local file
+            if path is None:
+                path = MODELS_DIR
+
+            os.makedirs(path, exist_ok=True)
+
+            filename = os.path.join(path, f'nba_predictor_{self.model_version}.pkl')
+
+            with open(filename, 'wb') as f:
+                pickle.dump(model_data, f)
+
+            # Also save as latest
+            latest_path = os.path.join(path, 'nba_predictor_latest.pkl')
+            with open(latest_path, 'wb') as f:
+                pickle.dump(model_data, f)
+
+            print(f"Model saved to {filename}")
+            return filename
 
     def load_model(self, path: Optional[str] = None):
         """
-        Load trained models from disk.
+        Load trained models from disk or database (cloud mode).
 
         Args:
-            path: Path to model file or directory
+            path: Path to model file or directory (ignored in cloud mode)
         """
-        if path is None:
-            path = os.path.join(MODELS_DIR, 'nba_predictor_latest.pkl')
-        elif os.path.isdir(path):
-            path = os.path.join(path, 'nba_predictor_latest.pkl')
+        from .database import IS_CLOUD
 
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"No model found at {path}")
+        if IS_CLOUD:
+            # Load from database
+            import psycopg2
+            from .database import DATABASE_URL
+            from urllib.parse import urlparse, unquote
 
-        with open(path, 'rb') as f:
-            model_data = pickle.load(f)
+            parsed = urlparse(DATABASE_URL)
+            conn = psycopg2.connect(
+                host=parsed.hostname,
+                port=parsed.port or 6543,
+                database=parsed.path.lstrip('/') or 'postgres',
+                user=unquote(parsed.username) if parsed.username else 'postgres',
+                password=unquote(parsed.password) if parsed.password else '',
+                sslmode='require'
+            )
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT model_data FROM models WHERE model_name = %s", ('nba_predictor_latest',))
+            row = cursor.fetchone()
+            conn.close()
+
+            if row is None or row[0] is None:
+                raise FileNotFoundError("No model found in database")
+
+            model_bytes = bytes(row[0])
+            model_data = pickle.loads(model_bytes)
+        else:
+            # Load from local file
+            if path is None:
+                path = os.path.join(MODELS_DIR, 'nba_predictor_latest.pkl')
+            elif os.path.isdir(path):
+                path = os.path.join(path, 'nba_predictor_latest.pkl')
+
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"No model found at {path}")
+
+            with open(path, 'rb') as f:
+                model_data = pickle.load(f)
 
         self.win_model = model_data['win_model']
         self.spread_model = model_data['spread_model']
@@ -353,9 +419,37 @@ class NBAPredictor:
     @staticmethod
     def model_exists(path: Optional[str] = None) -> bool:
         """Check if a trained model exists."""
-        if path is None:
-            path = os.path.join(MODELS_DIR, 'nba_predictor_latest.pkl')
-        return os.path.exists(path)
+        from .database import IS_CLOUD
+
+        if IS_CLOUD:
+            # Check database
+            try:
+                import psycopg2
+                from .database import DATABASE_URL
+                from urllib.parse import urlparse, unquote
+
+                parsed = urlparse(DATABASE_URL)
+                conn = psycopg2.connect(
+                    host=parsed.hostname,
+                    port=parsed.port or 6543,
+                    database=parsed.path.lstrip('/') or 'postgres',
+                    user=unquote(parsed.username) if parsed.username else 'postgres',
+                    password=unquote(parsed.password) if parsed.password else '',
+                    sslmode='require'
+                )
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM models WHERE model_name = %s AND model_data IS NOT NULL",
+                             ('nba_predictor_latest',))
+                count = cursor.fetchone()[0]
+                conn.close()
+                return count > 0
+            except Exception as e:
+                print(f"Error checking model existence: {e}")
+                return False
+        else:
+            if path is None:
+                path = os.path.join(MODELS_DIR, 'nba_predictor_latest.pkl')
+            return os.path.exists(path)
 
 
 def train_models(

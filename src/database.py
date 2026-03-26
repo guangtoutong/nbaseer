@@ -279,6 +279,15 @@ def init_database():
         fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Models table (for storing trained models in cloud mode)
+    CREATE TABLE IF NOT EXISTS models (
+        id SERIAL PRIMARY KEY,
+        model_name TEXT NOT NULL UNIQUE,
+        model_data BYTEA,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- Indexes
     CREATE INDEX IF NOT EXISTS idx_games_date ON games(game_date);
     CREATE INDEX IF NOT EXISTS idx_schedule_date ON schedule(game_date);
