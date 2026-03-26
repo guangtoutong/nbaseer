@@ -381,6 +381,10 @@ class FeatureEngineer:
         total_games = len(games)
         print(f"Processing {total_games} games for training data...")
 
+        # Debug: check home_win distribution
+        win_values = games['home_win'].value_counts()
+        print(f"  home_win distribution: {win_values.to_dict()}")
+
         for i, (idx, row) in enumerate(games.iterrows()):
             if i % 500 == 0:
                 print(f"  Processing game {i+1}/{total_games} ({100*i//total_games}%)...")
@@ -393,14 +397,27 @@ class FeatureEngineer:
                 )
 
                 X_list.append(features.flatten())
-                # Ensure proper type conversion
-                y_win_list.append(1 if float(row['home_win']) > 0.5 else 0)
+                # Convert home_win - handle various formats (0/1, True/False, etc.)
+                home_win_val = row['home_win']
+                if isinstance(home_win_val, (bool, np.bool_)):
+                    y_win = 1 if home_win_val else 0
+                elif isinstance(home_win_val, str):
+                    y_win = 1 if home_win_val.lower() in ('1', 'true', 't', 'yes') else 0
+                else:
+                    y_win = int(home_win_val) if home_win_val else 0
+                y_win_list.append(y_win)
+
                 y_spread_list.append(float(row['point_diff']) if row['point_diff'] is not None else 0.0)
                 y_total_list.append(float(row['total_points']) if row['total_points'] is not None else 0.0)
 
             except Exception as e:
                 print(f"  Error processing game {row.get('game_id', idx)}: {e}")
                 continue
+
+        # Debug: check label distribution
+        if y_win_list:
+            unique_labels = set(y_win_list)
+            print(f"  Training labels distribution: 0={y_win_list.count(0)}, 1={y_win_list.count(1)}")
 
         if not X_list:
             print("No valid training samples generated!")
