@@ -109,36 +109,40 @@ def format_game_time(time_str: Optional[str]) -> str:
 
 def get_team_name_mapping() -> dict:
     """Get mapping of team abbreviations to full names."""
-    conn = get_db_connection()
-    df = pd.read_sql("SELECT abbreviation, full_name FROM teams", conn)
-    conn.close()
+    df = read_sql("SELECT abbreviation, full_name FROM teams")
+    if df.empty:
+        return {}
     return dict(zip(df['abbreviation'], df['full_name']))
 
 
 def get_team_id_mapping() -> dict:
     """Get mapping of team abbreviations to IDs."""
-    conn = get_db_connection()
-    df = pd.read_sql("SELECT abbreviation, team_id FROM teams", conn)
-    conn.close()
+    df = read_sql("SELECT abbreviation, team_id FROM teams")
+    if df.empty:
+        return {}
     return dict(zip(df['abbreviation'], df['team_id']))
 
 
 def calculate_rest_days(team_id: int, game_date: str) -> int:
     """Calculate days of rest before a game for a team."""
-    conn = get_db_connection()
     query = """
         SELECT MAX(game_date) as last_game
         FROM games
         WHERE (home_team_id = ? OR away_team_id = ?)
         AND game_date < ?
     """
-    result = pd.read_sql(query, conn, params=(team_id, team_id, game_date))
-    conn.close()
+    result = read_sql(query, params=(team_id, team_id, game_date))
 
-    if result['last_game'].iloc[0] is None:
+    if result.empty or result['last_game'].iloc[0] is None:
         return 7  # Default to a week if no previous game found
 
-    last_game = datetime.strptime(result['last_game'].iloc[0], '%Y-%m-%d')
+    last_game_val = result['last_game'].iloc[0]
+    # Handle both string and date objects
+    if isinstance(last_game_val, str):
+        last_game = datetime.strptime(last_game_val, '%Y-%m-%d')
+    else:
+        last_game = datetime.combine(last_game_val, datetime.min.time())
+
     current_game = datetime.strptime(game_date, '%Y-%m-%d')
     return (current_game - last_game).days
 
