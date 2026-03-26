@@ -495,6 +495,26 @@ def render_model_training(t: Translator):
             import traceback
             st.code(traceback.format_exc())
 
+            # Show debug info on error
+            st.warning("**Debug Info - Please share this:**")
+            try:
+                from src.database import read_sql
+                raw = read_sql("SELECT game_id, home_score, away_score, home_win FROM games LIMIT 5")
+                st.write("Sample data from games table:")
+                st.dataframe(raw)
+
+                stats = read_sql("""
+                    SELECT
+                        COUNT(*) as total,
+                        SUM(CASE WHEN home_score > away_score THEN 1 ELSE 0 END) as home_wins_calc,
+                        SUM(home_win) as home_win_stored
+                    FROM games WHERE home_score IS NOT NULL
+                """)
+                st.write("Statistics:")
+                st.dataframe(stats)
+            except Exception as e2:
+                st.error(f"Debug query failed: {e2}")
+
 
 def render_api_settings(t: Translator):
     """Render API settings section."""
