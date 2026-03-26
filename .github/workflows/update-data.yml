@@ -2,10 +2,10 @@ name: Update NBA Data
 
 on:
   schedule:
-    # 北京时间 10:00 (UTC 02:00) - 获取赛程和赔率
-    - cron: '0 2 * * *'
-    # 北京时间 14:00 (UTC 06:00) - 更新比赛结果
-    - cron: '0 6 * * *'
+    # Every 3 hours (8 times per day)
+    # UTC times: 0, 3, 6, 9, 12, 15, 18, 21
+    # Beijing times: 8, 11, 14, 17, 20, 23, 2, 5
+    - cron: '0 */3 * * *'
   workflow_dispatch:  # 允许手动触发
     inputs:
       update_type:

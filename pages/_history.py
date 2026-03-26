@@ -18,13 +18,19 @@ from src.predictor import GamePredictor
 from src.data_collector import get_historical_games
 from src.utils import get_chinese_name, DB_PATH
 from src.i18n import Translator, LANGUAGES
+from src.styles import COMMON_CSS, render_brand_header
+from src.database import IS_CLOUD, read_sql
 
 # Page config
 st.set_page_config(
     page_title="History | NBAseer",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
+
+# Apply common styles
+st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
 
 def init_session_state():
@@ -161,13 +167,20 @@ def main():
     init_session_state()
     t = Translator(st.session_state.lang)
 
-    # Header
-    col1, col2 = st.columns([3, 1])
+    # Brand header
+    slogan = "Data-Driven Game Predictions" if st.session_state.lang == 'en' else "数据驱动的比赛预测"
+    st.markdown(render_brand_header("NBAseer", slogan), unsafe_allow_html=True)
+
+    # Navigation and language
+    col1, col2, col3 = st.columns([1, 2, 1])
 
     with col1:
-        st.title(f"📊 {t('prediction_history')}")
+        st.markdown(f"[← {'Home' if st.session_state.lang == 'en' else '首页'}](/)", unsafe_allow_html=True)
 
     with col2:
+        st.markdown(f"<h2 style='text-align: center;'>📊 {t('prediction_history')}</h2>", unsafe_allow_html=True)
+
+    with col3:
         # Language switcher
         new_lang = st.selectbox(
             "🌐",
@@ -181,9 +194,19 @@ def main():
             st.rerun()
 
     # Check if system is ready
-    if not DB_PATH.exists():
+    if not IS_CLOUD and not DB_PATH.exists():
         st.warning("System not initialized" if st.session_state.lang == 'en' else "系统未初始化")
         return
+
+    if IS_CLOUD:
+        try:
+            check = read_sql("SELECT COUNT(*) as cnt FROM teams")
+            if check.empty or check.iloc[0]['cnt'] == 0:
+                st.warning("System not initialized" if st.session_state.lang == 'en' else "系统未初始化")
+                return
+        except:
+            st.warning("System not initialized" if st.session_state.lang == 'en' else "系统未初始化")
+            return
 
     try:
         predictor = GamePredictor()
