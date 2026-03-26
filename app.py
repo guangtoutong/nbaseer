@@ -435,9 +435,21 @@ def render_games_list(t: Translator):
     date_str = st.session_state.selected_date.strftime('%Y-%m-%d')
 
     # Check system status
-    if not DB_PATH.exists():
+    from src.database import IS_CLOUD, read_sql
+    if not IS_CLOUD and not DB_PATH.exists():
         st.warning(t('not_initialized') if st.session_state.lang == 'en' else "系统未初始化，请联系管理员")
         return
+
+    # For cloud mode, check if database has data
+    if IS_CLOUD:
+        try:
+            check = read_sql("SELECT COUNT(*) as cnt FROM teams")
+            if check.empty or check.iloc[0]['cnt'] == 0:
+                st.warning(t('not_initialized') if st.session_state.lang == 'en' else "系统未初始化，请联系管理员")
+                return
+        except:
+            st.warning(t('not_initialized') if st.session_state.lang == 'en' else "系统未初始化，请联系管理员")
+            return
 
     if not NBAPredictor.model_exists():
         st.warning(t('not_trained') if st.session_state.lang == 'en' else "模型未训练，请联系管理员")
