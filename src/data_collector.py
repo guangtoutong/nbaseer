@@ -319,24 +319,27 @@ def fetch_schedule(date: str) -> pd.DataFrame:
             home_team_id = row['HOME_TEAM_ID']
             away_team_id = row['VISITOR_TEAM_ID']
             game_status = row.get('GAME_STATUS_TEXT', 'Scheduled')
+            # Extract game time from status text (e.g., "7:30 pm ET")
+            game_time = game_status if 'pm' in game_status.lower() or 'am' in game_status.lower() else None
 
             if IS_CLOUD:
                 execute_query("""
                     INSERT INTO schedule
-                    (game_id, game_date, home_team_id, away_team_id, status)
-                    VALUES (%s, %s, %s, %s, %s)
+                    (game_id, game_date, game_time, home_team_id, away_team_id, status)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     ON CONFLICT (game_id) DO UPDATE SET
                         game_date = EXCLUDED.game_date,
+                        game_time = EXCLUDED.game_time,
                         home_team_id = EXCLUDED.home_team_id,
                         away_team_id = EXCLUDED.away_team_id,
                         status = EXCLUDED.status
-                """, (game_id, date, home_team_id, away_team_id, game_status), fetch=False)
+                """, (game_id, date, game_time, home_team_id, away_team_id, game_status), fetch=False)
             else:
                 execute_query("""
                     INSERT OR REPLACE INTO schedule
-                    (game_id, game_date, home_team_id, away_team_id, status)
-                    VALUES (?, ?, ?, ?, ?)
-                """, (game_id, date, home_team_id, away_team_id, game_status), fetch=False)
+                    (game_id, game_date, game_time, home_team_id, away_team_id, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (game_id, date, game_time, home_team_id, away_team_id, game_status), fetch=False)
 
         return games_df
 
