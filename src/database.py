@@ -150,10 +150,33 @@ def execute_query(query: str, params: tuple = None, fetch: bool = True) -> Optio
 
 def read_sql(query: str, params: tuple = None) -> pd.DataFrame:
     """Read SQL query into DataFrame."""
-    with get_db_connection() as conn:
-        if IS_CLOUD:
-            query = query.replace('?', '%s')
-        return pd.read_sql(query, conn, params=params)
+    if IS_CLOUD:
+        # For PostgreSQL, create a connection WITHOUT RealDictCursor
+        # because pd.read_sql needs a regular cursor
+        import psycopg2
+        from urllib.parse import urlparse, unquote
+
+        parsed = urlparse(DATABASE_URL)
+        conn = psycopg2.connect(
+            host=parsed.hostname,
+            port=parsed.port or 6543,
+            database=parsed.path.lstrip('/') or 'postgres',
+            user=unquote(parsed.username) if parsed.username else 'postgres',
+            password=unquote(parsed.password) if parsed.password else '',
+            sslmode='require',
+            connect_timeout=10
+            # Note: NO cursor_factory here - use default cursor for pandas
+        )
+        query = query.replace('?', '%s')
+        try:
+            df = pd.read_sql(query, conn, params=params)
+            return df
+        finally:
+            conn.close()
+    else:
+        # SQLite - use context manager
+        with get_db_connection() as conn:
+            return pd.read_sql(query, conn, params=params)
 
 
 def init_database():
