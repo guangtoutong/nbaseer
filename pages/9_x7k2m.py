@@ -404,8 +404,39 @@ def render_model_training(t: Translator):
             status_text.text("Preparing training data..." if st.session_state.lang == 'en' else "准备训练数据...")
             progress_bar.progress(10)
 
+            # First check raw data from database
+            from src.database import read_sql
+            debug_info = {}
+
+            raw_sample = read_sql("SELECT game_id, home_score, away_score, home_win FROM games LIMIT 5")
+            debug_info['raw_sample'] = raw_sample.to_dict() if not raw_sample.empty else "NO DATA"
+
+            score_stats = read_sql("""
+                SELECT
+                    COUNT(*) as total_games,
+                    AVG(home_score) as avg_home_score,
+                    AVG(away_score) as avg_away_score,
+                    SUM(CASE WHEN home_score > away_score THEN 1 ELSE 0 END) as home_wins,
+                    SUM(CASE WHEN home_score < away_score THEN 1 ELSE 0 END) as away_wins,
+                    SUM(CASE WHEN home_score = away_score THEN 1 ELSE 0 END) as ties
+                FROM games WHERE home_score IS NOT NULL
+            """)
+            debug_info['score_stats'] = score_stats.to_dict() if not score_stats.empty else "NO STATS"
+
+            with st.expander("🔍 Debug: Raw Database Data", expanded=True):
+                st.write("**Sample rows from database:**")
+                st.dataframe(raw_sample)
+                st.write("**Score statistics:**")
+                st.json(debug_info['score_stats'])
+
             engineer = FeatureEngineer()
             X, y_win, y_spread, y_total = engineer.prepare_training_data()
+
+            # Show y_win distribution
+            import numpy as np
+            unique, counts = np.unique(y_win, return_counts=True)
+            y_win_dist = dict(zip(unique.tolist(), counts.tolist()))
+            st.write(f"**y_win distribution after feature engineering:** {y_win_dist}")
 
             if len(X) == 0:
                 st.error("Not enough training data" if st.session_state.lang == 'en' else "训练数据不足")
