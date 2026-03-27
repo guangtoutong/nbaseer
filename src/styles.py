@@ -3,6 +3,198 @@ Shared styles for NBAseer application.
 Dark theme with orange accent - matching Stitch design
 """
 
+# Card-specific CSS for components.html() rendering
+CARD_CSS = """
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+    background: transparent;
+    color: #fff;
+}
+
+.game-card {
+    background: #1a1a1e;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid #2a2a2e;
+}
+
+.game-time {
+    display: inline-block;
+    background: #2a2a2e;
+    color: #888;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.teams-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.team-info {
+    text-align: center;
+}
+
+.team-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: white;
+    margin: 0 auto 0.5rem;
+}
+
+.team-name {
+    color: #888;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vs-text {
+    color: #444;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.prob-section {
+    margin-bottom: 1.5rem;
+}
+
+.prob-label {
+    color: #666;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+}
+
+.prob-values {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.prob-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.prob-value.away {
+    color: #ff6b35;
+}
+
+.prob-bar {
+    display: flex;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #2a2a2e;
+}
+
+.prob-bar-away {
+    background: linear-gradient(90deg, #ff6b35, #ff8c5a);
+}
+
+.prob-bar-home {
+    background: linear-gradient(90deg, #4a4a4e, #3a3a3e);
+}
+
+.pred-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #2a2a2e;
+}
+
+.pred-stat {
+    text-align: center;
+}
+
+.pred-stat-label {
+    color: #666;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+}
+
+.pred-stat-value {
+    color: white;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.pred-stat-sub {
+    color: #888;
+    font-size: 0.8rem;
+}
+
+.forecast-box {
+    background: #131316;
+    border-radius: 8px;
+    padding: 0.8rem;
+    text-align: center;
+}
+
+.forecast-label {
+    color: #ff6b35;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+}
+
+.forecast-value {
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.result-section {
+    text-align: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #2a2a2e;
+}
+
+.result-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.result-badge.correct {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.result-badge.wrong {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+"""
+
 # Common CSS for all pages - Dark theme
 COMMON_CSS = """
 <style>
