@@ -152,8 +152,25 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
         </div>
         '''
 
+    # Determine which team has higher probability (winner gets orange)
+    home_is_winner = home_prob > away_prob
+    away_winner_class = "winner" if not home_is_winner else ""
+    home_winner_class = "winner" if home_is_winner else ""
+
+    # Progress bar: winner on left with orange, loser on right with gray
+    if home_is_winner:
+        bar_html = f'''
+            <div class="prob-bar-winner" style="width: {home_prob*100:.1f}%;"></div>
+            <div class="prob-bar-loser" style="width: {away_prob*100:.1f}%;"></div>
+        '''
+    else:
+        bar_html = f'''
+            <div class="prob-bar-winner" style="width: {away_prob*100:.1f}%;"></div>
+            <div class="prob-bar-loser" style="width: {home_prob*100:.1f}%;"></div>
+        '''
+
     # Labels
-    time_display = f'<div class="game-time">⏰ {game_time} ET</div>' if game_time else ''
+    time_display = f'<div class="game-time">⏰ {game_time} ET</div>' if game_time else '<div class="game-time">TBD</div>'
     spread_text = f"{game['away_abbr']} {predicted_spread:+.1f}" if predicted_spread < 0 else f"{game['home_abbr']} {-predicted_spread:+.1f}"
 
     # Complete HTML with inline CSS
@@ -180,26 +197,25 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
                 </div>
             </div>
             <div class="prob-section">
-                <div class="prob-label">WIN PROBABILITY</div>
+                <div class="prob-label">{"胜率预测" if lang == "zh" else "WIN PROBABILITY"}</div>
                 <div class="prob-values">
-                    <span class="prob-value away">{away_prob*100:.0f}%</span>
-                    <span class="prob-value">—</span>
-                    <span class="prob-value">{home_prob*100:.0f}%</span>
+                    <span class="prob-value {away_winner_class}">{away_prob*100:.0f}%</span>
+                    <span class="prob-value">vs</span>
+                    <span class="prob-value {home_winner_class}">{home_prob*100:.0f}%</span>
                 </div>
                 <div class="prob-bar">
-                    <div class="prob-bar-away" style="width: {away_prob*100:.1f}%;"></div>
-                    <div class="prob-bar-home" style="width: {home_prob*100:.1f}%;"></div>
+                    {bar_html}
                 </div>
             </div>
             <div class="pred-stats">
                 <div class="pred-stat">
-                    <div class="pred-stat-label">{"预测比分" if lang == "zh" else "PREDICTED"}</div>
+                    <div class="pred-stat-label">{"预测比分" if lang == "zh" else "SCORE"}</div>
                     <div class="pred-stat-value">{away_pred_score:.0f} : {home_pred_score:.0f}</div>
-                    <div class="pred-stat-sub">{"让分" if lang == "zh" else "Spread"} {spread_text}</div>
+                    <div class="pred-stat-sub">{spread_text}</div>
                 </div>
                 <div class="forecast-box">
-                    <div class="forecast-label">{"预测" if lang == "zh" else "FORECAST"}</div>
-                    <div class="forecast-value">{"总分" if lang == "zh" else "Total"} {predicted_total:.1f}</div>
+                    <div class="forecast-label">{"总分" if lang == "zh" else "TOTAL"}</div>
+                    <div class="forecast-value">{predicted_total:.1f}</div>
                 </div>
             </div>
             {result_html}
@@ -209,7 +225,7 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
     '''
 
     # Render using components.html for proper HTML rendering
-    components.html(full_html, height=320 if not result_html else 370)
+    components.html(full_html, height=280 if not result_html else 330)
 
 
 def render_games_list(t: Translator):

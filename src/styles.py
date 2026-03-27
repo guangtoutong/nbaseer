@@ -19,168 +19,172 @@ body {
 
 .game-card {
     background: #1a1a1e;
-    border-radius: 16px;
-    padding: 1.5rem;
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
     border: 1px solid #2a2a2e;
+    max-width: 500px;
+    margin: 0 auto;
 }
 
 .game-time {
     display: inline-block;
     background: #2a2a2e;
-    color: #888;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    margin-bottom: 1rem;
+    color: #aaa;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    margin-bottom: 0.8rem;
 }
 
 .teams-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 2rem;
-    margin-bottom: 1.5rem;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .team-info {
     text-align: center;
+    min-width: 70px;
 }
 
 .team-circle {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     color: white;
-    margin: 0 auto 0.5rem;
+    margin: 0 auto 0.4rem;
 }
 
 .team-name {
-    color: #888;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: #999;
+    font-size: 0.7rem;
 }
 
 .vs-text {
-    color: #444;
-    font-size: 0.8rem;
+    color: #555;
+    font-size: 0.75rem;
     font-weight: 500;
 }
 
 .prob-section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 .prob-label {
     color: #666;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
+    text-align: center;
 }
 
 .prob-values {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
 .prob-value {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: white;
+    color: #888;
 }
 
-.prob-value.away {
+.prob-value.winner {
     color: #ff6b35;
 }
 
 .prob-bar {
     display: flex;
     width: 100%;
-    height: 6px;
-    border-radius: 3px;
+    height: 8px;
+    border-radius: 4px;
     overflow: hidden;
     background: #2a2a2e;
 }
 
-.prob-bar-away {
+.prob-bar-winner {
     background: linear-gradient(90deg, #ff6b35, #ff8c5a);
 }
 
-.prob-bar-home {
-    background: linear-gradient(90deg, #4a4a4e, #3a3a3e);
+.prob-bar-loser {
+    background: #3a3a3e;
 }
 
 .pred-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    padding-top: 1rem;
+    display: flex;
+    justify-content: space-around;
+    gap: 0.5rem;
+    padding-top: 0.8rem;
     border-top: 1px solid #2a2a2e;
 }
 
 .pred-stat {
     text-align: center;
+    flex: 1;
 }
 
 .pred-stat-label {
     color: #666;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.3rem;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.2rem;
 }
 
 .pred-stat-value {
     color: white;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: 700;
 }
 
 .pred-stat-sub {
     color: #888;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
 }
 
 .forecast-box {
     background: #131316;
-    border-radius: 8px;
-    padding: 0.8rem;
+    border-radius: 6px;
+    padding: 0.5rem;
     text-align: center;
+    flex: 1;
 }
 
 .forecast-label {
     color: #ff6b35;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.3rem;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.2rem;
 }
 
 .forecast-value {
     color: white;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
 }
 
 .result-section {
     text-align: center;
-    margin-top: 1rem;
-    padding-top: 1rem;
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
     border-top: 1px solid #2a2a2e;
 }
 
 .result-badge {
     display: inline-block;
-    padding: 0.4rem 1rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
     font-weight: 600;
 }
 
