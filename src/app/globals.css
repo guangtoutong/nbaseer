@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-text antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-light;
+  }
+}
+
+/* Custom components */
+@layer components {
+  .card {
+    @apply bg-bg-card border border-border rounded-2xl p-6;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 hover:border-border-light hover:bg-bg-elevated;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white px-6 py-3 rounded-lg font-semibold
+           transition-all duration-200 hover:bg-primary-dark;
+  }
+
+  .btn-secondary {
+    @apply bg-bg-card text-text border border-border px-6 py-3 rounded-lg font-semibold
+           transition-all duration-200 hover:bg-bg-elevated hover:border-border-light;
+  }
+
+  .section-title {
+    @apply text-xl font-bold text-text flex items-center gap-2;
+  }
+
+  .stat-card {
+    @apply bg-primary rounded-xl p-4 text-white;
+  }
+
+  .team-badge {
+    @apply w-12 h-12 rounded-full flex items-center justify-center
+           text-white font-bold text-sm;
+  }
+
+  .prob-bar {
+    @apply h-2 rounded-full overflow-hidden bg-bg-elevated flex;
+  }
+
+  .nav-link {
+    @apply text-text-secondary hover:text-primary transition-colors duration-200;
+  }
+
+  .nav-link-active {
+    @apply text-primary;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

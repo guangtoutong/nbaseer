@@ -1,25 +1,30 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# Data files (keep empty directories)
-data/*.db
-data/*.sqlite
-data/config.json
+# Build outputs
+.next/
+out/
+build/
+.vercel/
+.output/
 
-# Models - keep the latest model for deployment
-models/*.joblib
-# Exclude versioned models but keep latest
-models/nba_predictor_2*.pkl
-!models/nba_predictor_latest.pkl
+# Cache
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # IDE
 .idea/
@@ -31,15 +36,12 @@ models/nba_predictor_2*.pkl
 .DS_Store
 Thumbs.db
 
-# Streamlit
-.streamlit/secrets.toml
+# Cloudflare
+.wrangler/
+.dev.vars
 
 # Logs
 *.log
-
-# Environment
-.env
-.env.local
 
 # Temp files
 *.tmp
