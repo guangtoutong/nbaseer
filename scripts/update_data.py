@@ -24,8 +24,7 @@ from src.database import init_database, get_database_mode
 from src.data_collector import (
     fetch_schedule,
     update_database,
-    fetch_team_info,
-    fetch_game_results
+    fetch_all_teams
 )
 from src.predictor import GamePredictor
 
@@ -83,7 +82,7 @@ def update_team_data():
     log("Updating team data...")
 
     try:
-        fetch_team_info()
+        fetch_all_teams()
         log("Team data update complete")
         return True
     except Exception as e:
