@@ -64,7 +64,9 @@ body {
 
 .team-name {
     color: #999;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 .vs-text {
@@ -134,10 +136,12 @@ body {
 
 .pred-stat-label {
     color: #666;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 .pred-stat-value {
@@ -702,12 +706,34 @@ COMMON_CSS = """
         padding: 0.5rem 1rem !important;
         font-weight: 600 !important;
         transition: all 0.2s !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
     }
 
     .stButton > button:hover {
         background: #ff6b35 !important;
         color: white !important;
         border-color: #ff6b35 !important;
+    }
+
+    /* Prevent text truncation */
+    .stMarkdown p, .stMarkdown span, .stMarkdown div {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+    }
+
+    /* Tabs full width text */
+    .stTabs [data-baseweb="tab"] {
+        white-space: nowrap !important;
+        overflow: visible !important;
     }
 
     .stSelectbox > div > div {

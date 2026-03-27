@@ -58,38 +58,46 @@ def init_session_state():
 
 
 def render_header(t: Translator):
-    """Render the branded header with language switcher in one row."""
+    """Render centered header with logo and language switcher."""
     lang = st.session_state.lang
     lang_toggle = "EN" if lang == 'zh' else "中文"
     brand_name = t('brand_name')
 
-    # Header row: logo on left, language button on right
-    col_logo, col_lang = st.columns([6, 1])
-
-    with col_logo:
-        st.markdown(f'''
-        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0;">
-            <span style="font-size: 1.5rem;">🏀</span>
-            <span style="font-size: 1.5rem; font-weight: 700; color: #ff6b35;">{brand_name}</span>
+    # Centered header with HTML
+    st.markdown(f'''
+    <div style="
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1rem 0;
+        margin-bottom: 0.5rem;
+    ">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.8rem;">🏀</span>
+            <span style="font-size: 1.8rem; font-weight: 700; color: #ff6b35;">{brand_name}</span>
         </div>
-        ''', unsafe_allow_html=True)
+    </div>
+    ''', unsafe_allow_html=True)
 
-    with col_lang:
-        if st.button(lang_toggle, key="lang_toggle"):
+    # Language toggle centered below
+    _, col_btn, _ = st.columns([2, 1, 2])
+    with col_btn:
+        if st.button(lang_toggle, key="lang_toggle", use_container_width=True):
             st.session_state.lang = 'en' if lang == 'zh' else 'zh'
             st.rerun()
 
 
 def render_date_navigation(t: Translator):
-    """Render compact date navigation centered."""
-    # Center the date navigation with padding columns
-    _, col_nav, _ = st.columns([1, 3, 1])
+    """Render compact centered date navigation."""
+    # Center with narrower width
+    _, col_nav, _ = st.columns([1, 2, 1])
 
     with col_nav:
-        c1, c2, c3 = st.columns([1, 2, 1])
+        c1, c2, c3 = st.columns([1, 3, 1])
 
         with c1:
-            if st.button("◀", key="prev_day"):
+            if st.button("◀", key="prev_day", use_container_width=True):
                 st.session_state.selected_date -= timedelta(days=1)
                 st.rerun()
 
@@ -105,7 +113,7 @@ def render_date_navigation(t: Translator):
                 st.rerun()
 
         with c3:
-            if st.button("▶", key="next_day"):
+            if st.button("▶", key="next_day", use_container_width=True):
                 st.session_state.selected_date += timedelta(days=1)
                 st.rerun()
 
