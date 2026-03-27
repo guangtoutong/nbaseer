@@ -232,11 +232,20 @@ COMMON_CSS = """
         }
     }
 
-    /* Remove extra padding on mobile */
+    /* Layout - centered on PC */
     .block-container {
-        padding: 0 !important;
-        max-width: 100% !important;
+        padding: 1rem !important;
+        max-width: 900px !important;
+        margin: 0 auto !important;
     }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding: 0.5rem !important;
+            max-width: 100% !important;
+        }
+    }
+
     .stApp > header {display: none;}
 
     /* Streamlit element tweaks */
