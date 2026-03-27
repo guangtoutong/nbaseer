@@ -1,0 +1,17 @@
+name = "nbaseer-worker"
+main = "index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "nbaseer-db"
+database_id = "f829cafa-9562-47fd-b4e2-70684a9f78a6"
+
+# Cron trigger - every 30 minutes
+[triggers]
+crons = ["*/30 * * * *"]
+
+# Environment variables (set in dashboard or .dev.vars)
+# ODDS_API_KEY = "your-api-key"
