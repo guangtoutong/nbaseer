@@ -28,7 +28,7 @@ COMMON_CSS = """
 
     /* ===== BRAND HEADER ===== */
     .brand-header {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+        background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
         padding: 1.5rem 1rem;
         margin: -1rem -1rem 1rem -1rem;
         text-align: center;
@@ -66,7 +66,7 @@ COMMON_CSS = """
         justify-content: space-between;
         align-items: center;
         padding: 1rem;
-        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+        background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
         color: white;
         border-radius: 12px 12px 0 0;
     }
@@ -123,7 +123,7 @@ COMMON_CSS = """
     }
     .score-display b {
         font-size: 1.5rem;
-        color: #1e3a5f;
+        color: #ff6b35;
     }
 
     /* Prediction metrics */
@@ -147,7 +147,7 @@ COMMON_CSS = """
     .pred-value {
         font-size: 1rem;
         font-weight: 600;
-        color: #1e3a5f;
+        color: #ff6b35;
     }
     .pred-conf {
         font-size: 0.7rem;
@@ -174,7 +174,7 @@ COMMON_CSS = """
 
     /* ===== STATS CARDS ===== */
     .stat-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+        background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
         border-radius: 12px;
         padding: 1.2rem;
         color: white;
@@ -199,7 +199,7 @@ COMMON_CSS = """
         margin-top: 2rem;
     }
     .footer a {
-        color: #1e3a5f;
+        color: #ff6b35;
         text-decoration: none;
     }
 
