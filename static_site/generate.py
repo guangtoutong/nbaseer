@@ -23,6 +23,18 @@ TEMPLATES_DIR = Path(__file__).parent / "templates"
 SITE_URL = "https://nbaseer.com"
 SITE_NAME = "NBA先知 | NBAseer"
 
+# Team colors for circle badges
+TEAM_COLORS = {
+    'ATL': '#E03A3E', 'BOS': '#007A33', 'BKN': '#000000', 'CHA': '#1D1160',
+    'CHI': '#CE1141', 'CLE': '#860038', 'DAL': '#00538C', 'DEN': '#0E2240',
+    'DET': '#C8102E', 'GSW': '#1D428A', 'HOU': '#CE1141', 'IND': '#002D62',
+    'LAC': '#C8102E', 'LAL': '#552583', 'MEM': '#5D76A9', 'MIA': '#98002E',
+    'MIL': '#00471B', 'MIN': '#0C2340', 'NOP': '#0C2340', 'NYK': '#006BB6',
+    'OKC': '#007AC1', 'ORL': '#0077C0', 'PHI': '#006BB6', 'PHX': '#1D1160',
+    'POR': '#E03A3E', 'SAC': '#5A2D81', 'SAS': '#C4CED4', 'TOR': '#CE1141',
+    'UTA': '#002B5C', 'WAS': '#002B5C'
+}
+
 
 def get_predictions_for_date(date: str) -> List[Dict]:
     """Get predictions for a specific date."""
@@ -110,6 +122,7 @@ def generate_page(template_name: str, output_path: Path, context: Dict):
         'site_name': SITE_NAME,
         'generated_at': beijing_time.strftime('%Y-%m-%d %H:%M:%S') + ' (北京时间)',
         'current_year': beijing_time.year,
+        'team_colors': TEAM_COLORS,
     })
 
     html = template.render(**context)

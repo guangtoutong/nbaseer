@@ -2,17 +2,17 @@
 
 {% block content %}
 <!-- Breadcrumb -->
-<nav style="margin-bottom: 20px; color: var(--text-muted);">
-    <a href="{{ site_url }}{% if lang == 'en' %}/en/{% endif %}" style="color: var(--primary);">
+<nav style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
+    <a href="{{ site_url }}{% if lang == 'en' %}/en/{% endif %}" style="color: var(--primary); text-decoration: none;">
         {% if lang == 'zh' %}首页{% else %}Home{% endif %}
     </a>
-    <span style="margin: 0 10px;">/</span>
-    <span>{{ date_display }}</span>
+    <span style="margin: 0 10px; color: var(--text-secondary);">/</span>
+    <span style="color: var(--text);">{{ date_display }}</span>
 </nav>
 
 <!-- Page Header -->
 <section style="margin-bottom: 30px;">
-    <h1>{{ title }}</h1>
+    <h1 style="color: var(--text);">{{ title }}</h1>
     <p style="color: var(--text-muted);">
         {% if lang == 'zh' %}
         共 {{ predictions|length }} 场比赛预测
@@ -54,82 +54,89 @@
 <section>
     {% if predictions %}
         {% for pred in predictions %}
-        <div class="card">
-            <div class="card-header">
-                <div>
-                    <strong>{{ pred.away_name or 'Away Team' }}</strong>
-                    <span style="color: var(--text-muted);">@</span>
-                    <strong>{{ pred.home_name or 'Home Team' }}</strong>
-                    {% if pred.game_time %}
-                    <span style="color: var(--text-muted); font-size: 0.85rem; margin-left: 10px;">
-                        ⏰ {{ pred.game_time }} ET
-                    </span>
-                    {% endif %}
+        {% set away_prob = 1 - (pred.home_win_prob or 0.5) %}
+        {% set home_prob = pred.home_win_prob or 0.5 %}
+        {% set predicted_total = pred.predicted_total or 220 %}
+        {% set predicted_spread = pred.predicted_spread or 0 %}
+        {% set home_pred_score = ((predicted_total + predicted_spread) / 2)|round(0) %}
+        {% set away_pred_score = ((predicted_total - predicted_spread) / 2)|round(0) %}
+
+        <div class="game-card">
+            {% if pred.game_time %}
+            <div class="game-time">⏰ {{ pred.game_time }} ET</div>
+            {% endif %}
+
+            <div class="teams-container">
+                <div class="team-info">
+                    <div class="team-circle" style="background: {{ team_colors.get(pred.away_abbr, '#ff6b35') }};">{{ pred.away_abbr or '?' }}</div>
+                    <div class="team-name">{{ pred.away_name or pred.away_abbr or 'Away' }}</div>
                 </div>
-                {% if pred.actual_home_win is not none %}
-                <div style="font-size: 1.2rem;">
-                    {{ pred.away_score }} - {{ pred.home_score }}
+                <div class="vs-text">VS</div>
+                <div class="team-info">
+                    <div class="team-circle" style="background: {{ team_colors.get(pred.home_abbr, '#ff6b35') }};">{{ pred.home_abbr or '?' }}</div>
+                    <div class="team-name">{{ pred.home_name or pred.home_abbr or 'Home' }}</div>
                 </div>
-                {% endif %}
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                <!-- Win Probability -->
-                <div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">
-                        {% if lang == 'zh' %}主队胜率{% else %}Home Win Probability{% endif %}
-                    </div>
-                    {% set prob = pred.home_win_prob or 0.5 %}
-                    <div style="font-size: 1.5rem; font-weight: bold; color: {% if prob > 0.6 %}var(--success){% elif prob < 0.4 %}var(--danger){% else %}var(--text){% endif %};">
-                        {{ (prob * 100)|round(1) }}%
-                    </div>
-                    {% if pred.actual_home_win is not none %}
-                        {% set predicted_home = prob > 0.5 %}
-                        {% set correct = (predicted_home and pred.actual_home_win == 1) or (not predicted_home and pred.actual_home_win == 0) %}
-                        <span class="result {% if correct %}correct{% else %}wrong{% endif %}">
-                            {% if correct %}
-                                {% if lang == 'zh' %}预测正确{% else %}Correct{% endif %}
-                            {% else %}
-                                {% if lang == 'zh' %}预测错误{% else %}Wrong{% endif %}
-                            {% endif %}
+            <div class="prob-section">
+                <div class="prob-label">WIN PROBABILITY</div>
+                <div class="prob-values">
+                    <span class="prob-value away">{{ (away_prob * 100)|round(0) }}%</span>
+                    <span class="prob-value">—</span>
+                    <span class="prob-value">{{ (home_prob * 100)|round(0) }}%</span>
+                </div>
+                <div class="prob-bar">
+                    <div class="prob-bar-away" style="width: {{ (away_prob * 100)|round(0) }}%;"></div>
+                    <div class="prob-bar-home" style="width: {{ (home_prob * 100)|round(0) }}%;"></div>
+                </div>
+            </div>
+
+            <div class="pred-stats">
+                <div class="pred-stat">
+                    <div class="pred-stat-label">{% if lang == 'zh' %}预测比分{% else %}PREDICTED SCORE{% endif %}</div>
+                    <div class="pred-stat-value">{{ away_pred_score|int }} : {{ home_pred_score|int }}</div>
+                    {% if predicted_spread < 0 %}
+                    <div class="pred-stat-sub">{{ pred.away_abbr }} {{ predicted_spread|round(1) }}</div>
+                    {% else %}
+                    <div class="pred-stat-sub">{{ pred.home_abbr }} {{ (-predicted_spread)|round(1) }}</div>
+                    {% endif %}
+                </div>
+                <div class="forecast-box">
+                    <div class="forecast-label">{% if lang == 'zh' %}预测{% else %}FORECAST{% endif %}</div>
+                    <div class="forecast-value">{% if lang == 'zh' %}总分{% else %}Total{% endif %} {{ predicted_total|round(1) }}</div>
+                </div>
+            </div>
+
+            {% if pred.actual_home_win is not none %}
+            {% set predicted_home = home_prob > 0.5 %}
+            {% set correct = (predicted_home and pred.actual_home_win == 1) or (not predicted_home and pred.actual_home_win == 0) %}
+            {% set actual_total = (pred.home_score or 0) + (pred.away_score or 0) %}
+            {% set actual_spread = (pred.home_score or 0) - (pred.away_score or 0) %}
+
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div style="text-align: center;">
+                        <span class="result-badge {% if correct %}correct{% else %}wrong{% endif %}">
+                            {% if correct %}✓ {% if lang == 'zh' %}预测正确{% else %}CORRECT{% endif %}{% else %}✗ {% if lang == 'zh' %}预测错误{% else %}MISSED{% endif %}{% endif %}
                         </span>
-                    {% endif %}
-                </div>
-
-                <!-- Predicted Spread -->
-                <div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">
-                        {% if lang == 'zh' %}预测分差{% else %}Predicted Spread{% endif %}
                     </div>
-                    {% set spread = pred.predicted_spread or 0 %}
-                    <div style="font-size: 1.5rem; font-weight: bold;">
-                        {% if spread > 0 %}+{% endif %}{{ spread|round(1) }}
-                    </div>
-                    {% if pred.actual_home_win is not none %}
-                        {% set actual_spread = (pred.home_score or 0) - (pred.away_score or 0) %}
-                        <div style="color: var(--text-muted); font-size: 0.9rem;">
-                            {% if lang == 'zh' %}实际: {% else %}Actual: {% endif %}
-                            {% if actual_spread > 0 %}+{% endif %}{{ actual_spread }}
+                    <div style="display: flex; gap: 2rem;">
+                        <div style="text-align: center;">
+                            <div class="pred-stat-label">{% if lang == 'zh' %}终场比分{% else %}FINAL SCORE{% endif %}</div>
+                            <div style="color: var(--text); font-weight: 600;">{{ pred.away_score }} - {{ pred.home_score }}</div>
                         </div>
-                    {% endif %}
-                </div>
-
-                <!-- Predicted Total -->
-                <div>
-                    <div style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 5px;">
-                        {% if lang == 'zh' %}预测总分{% else %}Predicted Total{% endif %}
-                    </div>
-                    <div style="font-size: 1.5rem; font-weight: bold;">
-                        {{ (pred.predicted_total or 0)|round(1) }}
-                    </div>
-                    {% if pred.actual_home_win is not none %}
-                        {% set actual_total = (pred.home_score or 0) + (pred.away_score or 0) %}
-                        <div style="color: var(--text-muted); font-size: 0.9rem;">
-                            {% if lang == 'zh' %}实际: {% else %}Actual: {% endif %}{{ actual_total }}
+                        <div style="text-align: center;">
+                            <div class="pred-stat-label">{% if lang == 'zh' %}实际分差{% else %}ACTUAL SPREAD{% endif %}</div>
+                            <div style="color: var(--text);">{% if actual_spread > 0 %}+{% endif %}{{ actual_spread }}</div>
                         </div>
-                    {% endif %}
+                        <div style="text-align: center;">
+                            <div class="pred-stat-label">{% if lang == 'zh' %}实际总分{% else %}ACTUAL TOTAL{% endif %}</div>
+                            <div style="color: var(--text);">{{ actual_total }}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         {% if loop.index == 2 %}
@@ -146,8 +153,8 @@
         {% endif %}
         {% endfor %}
     {% else %}
-    <div class="card">
-        <p style="text-align: center; color: var(--text-muted);">
+    <div class="game-card" style="text-align: center; padding: 3rem;">
+        <p style="color: var(--text-muted);">
             {% if lang == 'zh' %}该日期暂无预测数据{% else %}No predictions available for this date{% endif %}
         </p>
     </div>
@@ -156,21 +163,11 @@
 
 <!-- Navigation -->
 <section style="display: flex; justify-content: space-between; margin-top: 30px;">
-    {% set prev_date = (date | replace('-', '') | int - 1) %}
-    {% set next_date = (date | replace('-', '') | int + 1) %}
-    <a href="{{ site_url }}{% if lang == 'en' %}/en{% endif %}/predictions/" style="color: var(--primary);">
-        &larr; {% if lang == 'zh' %}上一天{% else %}Previous Day{% endif %}
+    <a href="{{ site_url }}{% if lang == 'en' %}/en/{% endif %}" style="color: var(--primary); text-decoration: none;">
+        &larr; {% if lang == 'zh' %}返回首页{% else %}Back to Home{% endif %}
     </a>
-    <a href="{{ site_url }}{% if lang == 'en' %}/en{% endif %}/predictions/" style="color: var(--primary);">
-        {% if lang == 'zh' %}下一天{% else %}Next Day{% endif %} &rarr;
-    </a>
-</section>
-
-<!-- CTA -->
-<section style="text-align: center; margin-top: 40px;">
-    <a href="https://nbaseer.streamlit.app" target="_blank"
-       style="display: inline-block; background: var(--primary); color: white; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-        {% if lang == 'zh' %}查看实时预测{% else %}View Live Predictions{% endif %} &rarr;
+    <a href="https://nbaseer.streamlit.app{% if lang == 'en' %}?lang=en{% else %}?lang=zh{% endif %}" target="_blank" style="color: var(--primary); text-decoration: none;">
+        {% if lang == 'zh' %}查看实时预测{% else %}Live Predictions{% endif %} &rarr;
     </a>
 </section>
 {% endblock %}

@@ -20,7 +20,7 @@ from src.data_collector import fetch_schedule, get_scheduled_games
 from src.models import NBAPredictor
 from src.predictor import GamePredictor
 from src.i18n import Translator, LANGUAGES
-from src.styles import COMMON_CSS
+from src.styles import COMMON_CSS, render_game_card_new, render_footer, get_team_color
 
 # Page configuration
 st.set_page_config(
@@ -33,11 +33,11 @@ st.set_page_config(
 # PWA Meta Tags + AdSense Script
 st.markdown("""
 <link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#1e3a5f">
+<meta name="theme-color" content="#0d0d0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NBAseer">
-<meta name="description" content="NBA Game Prediction System - Data Insights, Game Predictions">
+<meta name="description" content="NBA Game Prediction System - AI Powered Predictions">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7786364053868586" crossorigin="anonymous"></script>
 """, unsafe_allow_html=True)
@@ -58,20 +58,30 @@ def init_session_state():
 
 def render_header(t: Translator):
     """Render the branded header with language switcher."""
-    # Brand header with gradient background
     lang = st.session_state.lang
-    lang_toggle = "EN" if lang == 'zh' else "中"
+    lang_toggle = "EN" if lang == 'zh' else "中文"
 
+    # Navigation bar
     st.markdown(f"""
-    <div class="brand-header">
-        <div class="brand-logo">🏀 {t('brand_name')}</div>
-        <div class="brand-slogan">{t('brand_slogan')}</div>
+    <div class="top-nav">
+        <div class="nav-logo">🏀 nbaseer</div>
+        <div class="nav-links">
+            <span class="nav-link active">{'预测' if lang == 'zh' else 'Predictions'}</span>
+        </div>
+        <div class="nav-actions"></div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Language toggle button (compact)
-    col1, col2, col3 = st.columns([1, 4, 1])
-    with col3:
+    # Page header with title and language toggle
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown(f"""
+        <div class="page-header">
+            <div class="page-title">{t('brand_name')}</div>
+            <div class="page-subtitle">{t('brand_slogan')}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
         if st.button(f"🌐 {lang_toggle}", key="lang_toggle", help="Switch language"):
             st.session_state.lang = 'en' if lang == 'zh' else 'zh'
             st.rerun()
@@ -113,7 +123,7 @@ def render_date_navigation(t: Translator):
 
 
 def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
-    """Render a single game prediction card - mobile optimized."""
+    """Render a single game prediction card - dark theme style."""
     lang = st.session_state.lang
 
     # Get team names
@@ -130,90 +140,44 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
     home_pred_score = (predicted_total + predicted_spread) / 2
     away_pred_score = (predicted_total - predicted_spread) / 2
 
-    # Determine winner and confidence
-    pred_winner = home_name if game['predicted_winner'] == 'home' else away_name
-    if game['confidence'] > 0.65:
-        conf = t('confidence_high')
-        conf_color = "#28a745"
-    elif game['confidence'] > 0.55:
-        conf = t('confidence_medium')
-        conf_color = "#ffc107"
-    else:
-        conf = t('confidence_low')
-        conf_color = "#dc3545"
-
     # Probability values
     home_prob = game['home_win_prob']
     away_prob = game['away_win_prob']
 
-    # Spread display
-    spread_team = home_name if game['predicted_spread'] > 0 else away_name
-    spread_val = abs(game['predicted_spread'])
-
     # Get game time
     game_time = game.get('game_time', '')
-    if game_time:
-        # Convert to more readable format if needed
-        time_display = game_time
-    else:
-        time_display = ''
 
-    # Build card using Streamlit components for better rendering
-    with st.container(border=True):
-        # Team header with game time
-        time_html = f'<div style="font-size: 0.75rem; margin-top: 0.3rem; opacity: 0.9;">⏰ {time_display} ET</div>' if time_display else ''
-        header_html = f'''<div class="game-card-header"><div style="text-align: left;"><div class="team-name">{away_name}</div><div class="team-abbr">{game['away_abbr']}</div></div><div style="text-align: center;"><div class="vs-badge">VS</div>{time_html}</div><div style="text-align: right;"><div class="team-name">{home_name}</div><div class="team-abbr">{game['home_abbr']}</div></div></div>'''
-        st.markdown(header_html, unsafe_allow_html=True)
+    # Use the new dark theme card
+    card_html = render_game_card_new(
+        away_abbr=game['away_abbr'],
+        home_abbr=game['home_abbr'],
+        away_name=away_name,
+        home_name=home_name,
+        away_prob=away_prob,
+        home_prob=home_prob,
+        predicted_away_score=away_pred_score,
+        predicted_home_score=home_pred_score,
+        predicted_total=predicted_total,
+        predicted_spread=predicted_spread,
+        game_time=game_time,
+        lang=lang
+    )
+    st.markdown(card_html, unsafe_allow_html=True)
 
-        # Probability bar
+    # Add result badge if available
+    if has_result and 'home_score' in game and pd.notna(game.get('home_score')):
+        actual_winner = 'home' if game['actual_home_win'] == 1 else 'away'
+        is_correct = game['predicted_winner'] == actual_winner
+
+        badge_class = "correct" if is_correct else "wrong"
+        if is_correct:
+            badge_text = f"✓ {t('prediction_correct')}" if lang == 'en' else "✓ 预测正确"
+        else:
+            badge_text = f"✗ {t('prediction_wrong')}" if lang == 'en' else "✗ 预测错误"
+
         st.markdown(f"""
-        <div class="prob-bar">
-            <div class="prob-away" style="width: {away_prob*100}%;">{away_prob*100:.0f}%</div>
-            <div class="prob-home" style="width: {home_prob*100}%;">{home_prob*100:.0f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Predicted score
-        st.markdown(f"""
-        <div class="score-display">
-            <b>{away_pred_score:.0f}</b> : <b>{home_pred_score:.0f}</b>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Add result if available
-        if has_result and 'home_score' in game and pd.notna(game.get('home_score')):
-            actual_winner = 'home' if game['actual_home_win'] == 1 else 'away'
-            is_correct = game['predicted_winner'] == actual_winner
-
-            if is_correct:
-                st.markdown(f"""
-                <div class="result-correct">
-                    ✅ {t('prediction_correct')} | {t('actual_score')}: {int(game['away_score'])} - {int(game['home_score'])}
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="result-wrong">
-                    ❌ {t('prediction_wrong')} | {t('actual_score')}: {int(game['away_score'])} - {int(game['home_score'])}
-                </div>
-                """, unsafe_allow_html=True)
-
-        # Prediction metrics
-        st.markdown(f"""
-        <div class="pred-metrics">
-            <div class="pred-item">
-                <div class="pred-label">{t('predicted_winner')}</div>
-                <div class="pred-value">{pred_winner}</div>
-                <div class="pred-conf" style="color: {conf_color};">{conf}</div>
-            </div>
-            <div class="pred-item">
-                <div class="pred-label">{t('predicted_spread')}</div>
-                <div class="pred-value">{spread_team} +{spread_val:.1f}</div>
-            </div>
-            <div class="pred-item">
-                <div class="pred-label">{t('predicted_total')}</div>
-                <div class="pred-value">{game['predicted_total']:.1f}</div>
-            </div>
+        <div style="text-align: center; margin-top: -0.5rem; margin-bottom: 1rem;">
+            <span class="result-badge {badge_class}">{badge_text} | {int(game['away_score'])} - {int(game['home_score'])}</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -342,18 +306,24 @@ def render_ad_slot(slot_id: str = "header"):
     # No placeholder in production - ads just don't show if not configured
 
 
-def render_footer(t: Translator):
-    """Render the page footer."""
+def render_page_footer(t: Translator):
+    """Render the page footer with dark theme styling."""
+    lang = st.session_state.lang
+
+    # Use the new dark theme footer
+    footer_html = render_footer(lang)
+    st.markdown(footer_html, unsafe_allow_html=True)
+
+    # Add disclaimer
     st.markdown(f"""
-    <div class="footer">
-        <p>{t('disclaimer')}</p>
-        <p>{t('copyright')}</p>
+    <div style="text-align: center; padding: 1rem; color: #666; font-size: 0.75rem;">
+        {t('disclaimer')}
     </div>
     """, unsafe_allow_html=True)
 
 
 def render_history_stats(t: Translator):
-    """Render simplified history stats view."""
+    """Render simplified history stats view with dark theme."""
     lang = st.session_state.lang
 
     try:
@@ -368,32 +338,61 @@ def render_history_stats(t: Translator):
         st.info("No prediction history yet" if lang == 'en' else "暂无预测历史")
         return
 
-    # Overall stats
-    st.subheader("📊 " + (t('accuracy_stats')))
+    # Overall stats with dark theme cards
+    st.markdown(f"""
+    <div class="page-header" style="padding: 1rem 0;">
+        <div class="page-title" style="font-size: 1.5rem;">📊 {t('accuracy_stats')}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # Performance cards
+    accuracy = stats.get('win_accuracy', 0)
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        accuracy = stats.get('win_accuracy', 0)
-        st.metric(
-            t('win_accuracy'),
-            f"{accuracy*100:.1f}%",
-            f"{(accuracy - 0.524)*100:+.1f}%"
-        )
+        st.markdown(f"""
+        <div class="perf-card highlight">
+            <div class="perf-label">{t('win_accuracy')}</div>
+            <div class="perf-value">{accuracy*100:.1f}%</div>
+            <div class="perf-desc">vs 52.4% breakeven</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col2:
-        st.metric(t('spread_mae'), f"{stats.get('spread_mae', 0):.1f}")
+        st.markdown(f"""
+        <div class="perf-card">
+            <div class="perf-label">{t('spread_mae')}</div>
+            <div class="perf-value">{stats.get('spread_mae', 0):.1f}</div>
+            <div class="perf-desc">{'分' if lang == 'zh' else 'points'}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col3:
-        st.metric(t('total_mae'), f"{stats.get('total_mae', 0):.1f}")
+        st.markdown(f"""
+        <div class="perf-card">
+            <div class="perf-label">{t('total_mae')}</div>
+            <div class="perf-value">{stats.get('total_mae', 0):.1f}</div>
+            <div class="perf-desc">{'分' if lang == 'zh' else 'points'}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with col4:
-        st.metric(t('total_predictions'), f"{stats.get('total_predictions', 0)}")
+        st.markdown(f"""
+        <div class="perf-card">
+            <div class="perf-label">{t('total_predictions')}</div>
+            <div class="perf-value">{stats.get('total_predictions', 0)}</div>
+            <div class="perf-desc">{'场比赛' if lang == 'zh' else 'games'}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.divider()
+    st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
 
     # Recent results by date
-    st.subheader("📅 " + ("Recent Results" if lang == 'en' else "近期结果"))
+    st.markdown(f"""
+    <div class="page-header" style="padding: 1rem 0;">
+        <div class="page-title" style="font-size: 1.5rem;">📅 {"Recent Results" if lang == 'en' else "近期结果"}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     comparison['game_date'] = pd.to_datetime(comparison['game_date'])
     dates = comparison['game_date'].dt.date.unique()
@@ -419,16 +418,39 @@ def render_history_stats(t: Translator):
                     away_name = game['away_abbr']
 
                 is_correct = game['win_correct'] == 1
-                icon = "✅" if is_correct else "❌"
+
+                # Calculate predicted scores
+                predicted_total = game['predicted_total']
+                predicted_spread = game['predicted_spread']
+                home_pred_score = (predicted_total + predicted_spread) / 2
+                away_pred_score = (predicted_total - predicted_spread) / 2
+
+                # Use dark theme result display
+                badge_class = "correct" if is_correct else "wrong"
+                badge_text = "✓ " + ("Correct" if lang == 'en' else "正确") if is_correct else "✗ " + ("Missed" if lang == 'en' else "错误")
+
+                away_color = get_team_color(game['away_abbr'])
+                home_color = get_team_color(game['home_abbr'])
 
                 st.markdown(f"""
-                <div style="padding: 0.5rem; margin: 0.3rem 0; border-radius: 5px;
-                            background: {'#d4edda' if is_correct else '#f8d7da'};">
-                    <b>{icon} {away_name} @ {home_name}</b><br>
-                    <span style="font-size: 0.85rem;">
-                        {t('actual_score')}: {int(game['away_score'])} - {int(game['home_score'])} |
-                        {t('predicted_spread')}: {game['predicted_spread']:+.1f}
-                    </span>
+                <div class="result-card" style="grid-template-columns: 1fr auto 1fr; padding: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                        <div class="team-circle" style="background: {away_color}; width: 40px; height: 40px; font-size: 0.65rem;">{game['away_abbr']}</div>
+                        <div>
+                            <div style="color: white; font-weight: 600;">{away_name}</div>
+                            <div style="color: #888; font-size: 0.85rem;">{int(game['away_score'])}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <span class="result-badge {badge_class}">{badge_text}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.8rem; justify-content: flex-end;">
+                        <div style="text-align: right;">
+                            <div style="color: white; font-weight: 600;">{home_name}</div>
+                            <div style="color: #888; font-size: 0.85rem;">{int(game['home_score'])}</div>
+                        </div>
+                        <div class="team-circle" style="background: {home_color}; width: 40px; height: 40px; font-size: 0.65rem;">{game['home_abbr']}</div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -462,7 +484,7 @@ def main():
     # Footer ad slot
     render_ad_slot("footer")
 
-    render_footer(t)
+    render_page_footer(t)
 
 
 if __name__ == "__main__":
