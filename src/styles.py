@@ -695,10 +695,19 @@ COMMON_CSS = """
     }
 
     .stButton > button {
+        background: #1a1a1e !important;
+        color: #ff6b35 !important;
+        border: 1px solid #2a2a2e !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+        transition: all 0.2s !important;
+    }
+
+    .stButton > button:hover {
         background: #ff6b35 !important;
         color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
+        border-color: #ff6b35 !important;
     }
 
     .stSelectbox > div > div {

@@ -58,52 +58,81 @@ def init_session_state():
 
 
 def render_header(t: Translator):
-    """Render the branded header with language switcher."""
+    """Render the branded header with language switcher - dark theme navbar style."""
     lang = st.session_state.lang
     lang_toggle = "EN" if lang == 'zh' else "中文"
+    brand_name = t('brand_name')
 
-    # Header with title and language toggle
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        st.title(f"🏀 {t('brand_name')}")
-        st.caption(t('brand_slogan'))
-    with col2:
-        if st.button(f"🌐 {lang_toggle}", key="lang_toggle", help="Switch language"):
+    # Custom HTML header matching static site design
+    header_html = f'''
+    <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #2a2a2e;
+    ">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">🏀</span>
+            <span style="
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #ff6b35;
+            ">{brand_name}</span>
+        </div>
+    </div>
+    '''
+    st.markdown(header_html, unsafe_allow_html=True)
+
+    # Language toggle as small button on the right
+    _, col_lang = st.columns([10, 1])
+    with col_lang:
+        if st.button(lang_toggle, key="lang_toggle", help="Switch language"):
             st.session_state.lang = 'en' if lang == 'zh' else 'zh'
             st.rerun()
 
 
 def render_date_navigation(t: Translator):
-    """Render date navigation."""
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 2, 1, 1])
+    """Render compact date navigation."""
+    lang = st.session_state.lang
+    today = datetime.now().date()
+    selected = st.session_state.selected_date
+
+    # Show date with relative indicator
+    if selected == today:
+        date_label = "今天" if lang == 'zh' else "Today"
+    elif selected == today + timedelta(days=1):
+        date_label = "明天" if lang == 'zh' else "Tomorrow"
+    elif selected == today - timedelta(days=1):
+        date_label = "昨天" if lang == 'zh' else "Yesterday"
+    else:
+        date_label = ""
+
+    date_str = selected.strftime('%Y-%m-%d')
+    display_text = f"{date_str} ({date_label})" if date_label else date_str
+
+    # Single row: prev | date picker | next
+    col1, col2, col3 = st.columns([1, 4, 1])
 
     with col1:
-        if st.button("◀️", help="Previous day"):
+        if st.button("◀", key="prev_day", use_container_width=True):
             st.session_state.selected_date -= timedelta(days=1)
             st.rerun()
 
     with col2:
-        if st.button(t('today_games').split()[0] if st.session_state.lang == 'en' else "今日"):
-            st.session_state.selected_date = datetime.now().date()
-            st.rerun()
-
-    with col3:
         new_date = st.date_input(
-            t('select_date'),
+            "Date",
             value=st.session_state.selected_date,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            key="date_picker"
         )
         if new_date != st.session_state.selected_date:
             st.session_state.selected_date = new_date
             st.rerun()
 
-    with col4:
-        if st.button("Tomorrow" if st.session_state.lang == 'en' else "明日"):
-            st.session_state.selected_date = datetime.now().date() + timedelta(days=1)
-            st.rerun()
-
-    with col5:
-        if st.button("▶️", help="Next day"):
+    with col3:
+        if st.button("▶", key="next_day", use_container_width=True):
             st.session_state.selected_date += timedelta(days=1)
             st.rerun()
 
