@@ -63,59 +63,71 @@ def render_header(t: Translator):
     lang_toggle = "EN" if lang == 'zh' else "中文"
     brand_name = t('brand_name')
 
-    # Centered header with HTML
+    # All-in-one centered header with language toggle
     st.markdown(f'''
     <div style="
         display: flex;
-        justify-content: center;
+        flex-direction: column;
         align-items: center;
-        gap: 1.5rem;
-        padding: 1rem 0;
-        margin-bottom: 0.5rem;
+        padding: 1.5rem 0 1rem 0;
     ">
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 1.8rem;">🏀</span>
-            <span style="font-size: 1.8rem; font-weight: 700; color: #ff6b35;">{brand_name}</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
+            <span style="font-size: 2rem;">🏀</span>
+            <span style="font-size: 2rem; font-weight: 700; color: #ff6b35;">{brand_name}</span>
         </div>
+        <a href="?lang={'en' if lang == 'zh' else 'zh'}" style="
+            display: inline-block;
+            padding: 0.4rem 1.5rem;
+            background: #1a1a1e;
+            border: 1px solid #2a2a2e;
+            border-radius: 20px;
+            color: #ff6b35;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        ">{lang_toggle}</a>
     </div>
     ''', unsafe_allow_html=True)
 
-    # Language toggle centered below
-    _, col_btn, _ = st.columns([2, 1, 2])
-    with col_btn:
-        if st.button(lang_toggle, key="lang_toggle", use_container_width=True):
-            st.session_state.lang = 'en' if lang == 'zh' else 'zh'
-            st.rerun()
-
 
 def render_date_navigation(t: Translator):
-    """Render compact centered date navigation."""
-    # Center with narrower width
-    _, col_nav, _ = st.columns([1, 2, 1])
+    """Render simple centered date navigation with prev/next buttons."""
+    lang = st.session_state.lang
+    today = datetime.now().date()
+    selected = st.session_state.selected_date
+    date_str = selected.strftime('%Y-%m-%d')
 
-    with col_nav:
-        c1, c2, c3 = st.columns([1, 3, 1])
+    # Date label
+    if selected == today:
+        date_label = "今天" if lang == 'zh' else "Today"
+    elif selected == today + timedelta(days=1):
+        date_label = "明天" if lang == 'zh' else "Tomorrow"
+    elif selected == today - timedelta(days=1):
+        date_label = "昨天" if lang == 'zh' else "Yesterday"
+    else:
+        date_label = ""
 
-        with c1:
-            if st.button("◀", key="prev_day", use_container_width=True):
-                st.session_state.selected_date -= timedelta(days=1)
-                st.rerun()
+    display_date = f"{date_str} ({date_label})" if date_label else date_str
 
-        with c2:
-            new_date = st.date_input(
-                "Date",
-                value=st.session_state.selected_date,
-                label_visibility="collapsed",
-                key="date_picker"
-            )
-            if new_date != st.session_state.selected_date:
-                st.session_state.selected_date = new_date
-                st.rerun()
+    # Simple centered navigation with Streamlit buttons
+    c1, c2, c3 = st.columns([1, 2, 1])
 
-        with c3:
-            if st.button("▶", key="next_day", use_container_width=True):
-                st.session_state.selected_date += timedelta(days=1)
-                st.rerun()
+    with c1:
+        if st.button("◀ " + ("前一天" if lang == 'zh' else "Prev"), key="prev_day", use_container_width=True):
+            st.session_state.selected_date -= timedelta(days=1)
+            st.rerun()
+
+    with c2:
+        st.markdown(f'''
+        <div style="text-align: center; padding: 0.5rem 0; color: #fff; font-size: 1rem;">
+            📅 {display_date}
+        </div>
+        ''', unsafe_allow_html=True)
+
+    with c3:
+        if st.button(("后一天" if lang == 'zh' else "Next") + " ▶", key="next_day", use_container_width=True):
+            st.session_state.selected_date += timedelta(days=1)
+            st.rerun()
 
 
 def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
@@ -238,7 +250,7 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
     '''
 
     # Render using components.html for proper HTML rendering
-    components.html(full_html, height=280 if not result_html else 330)
+    components.html(full_html, height=320 if not result_html else 380)
 
 
 def render_games_list(t: Translator):
@@ -310,11 +322,13 @@ def render_games_list(t: Translator):
             else:
                 date_label = ""
 
-            header_text = f"📅 {date_str}"
-            if date_label:
-                header_text += f" ({date_label})"
-            header_text += f" - {t('games_count', count=len(predictions))}"
-            st.subheader(header_text)
+            # Centered game count
+            games_text = t('games_count', count=len(predictions))
+            st.markdown(f'''
+            <div style="text-align: center; color: #888; font-size: 0.9rem; margin: 1rem 0;">
+                {games_text}
+            </div>
+            ''', unsafe_allow_html=True)
 
             # Display games with inline ads every 4 games
             for idx, (_, game) in enumerate(predictions.iterrows()):

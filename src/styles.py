@@ -124,8 +124,8 @@ body {
 .pred-stats {
     display: flex;
     justify-content: space-around;
-    gap: 0.5rem;
-    padding-top: 0.8rem;
+    gap: 1rem;
+    padding-top: 1rem;
     border-top: 1px solid #2a2a2e;
 }
 
@@ -157,10 +157,11 @@ body {
 
 .forecast-box {
     background: #131316;
-    border-radius: 6px;
-    padding: 0.5rem;
+    border-radius: 8px;
+    padding: 0.8rem;
     text-align: center;
     flex: 1;
+    min-width: 80px;
 }
 
 .forecast-label {
@@ -750,16 +751,25 @@ COMMON_CSS = """
     .stTabs [data-baseweb="tab-list"] {
         background: transparent;
         gap: 2rem;
+        justify-content: center !important;
     }
 
     .stTabs [data-baseweb="tab"] {
         color: #888;
         background: transparent;
+        white-space: nowrap !important;
     }
 
     .stTabs [aria-selected="true"] {
         color: #ff6b35 !important;
         border-bottom-color: #ff6b35 !important;
+    }
+
+    /* Center tabs container */
+    .stTabs {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     div[data-testid="stMetricValue"] {
