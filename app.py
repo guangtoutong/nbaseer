@@ -155,20 +155,23 @@ def render_game_card(game: pd.Series, t: Translator, has_result: bool = False):
         '''
 
     # Determine which team has higher probability (winner gets orange)
-    home_is_winner = home_prob > away_prob
-    away_winner_class = "winner" if not home_is_winner else ""
-    home_winner_class = "winner" if home_is_winner else ""
+    away_is_favored = away_prob > home_prob
+    away_winner_class = "winner" if away_is_favored else ""
+    home_winner_class = "winner" if not away_is_favored else ""
 
-    # Progress bar: winner on left with orange, loser on right with gray
-    if home_is_winner:
-        bar_html = f'''
-            <div class="prob-bar-winner" style="width: {home_prob*100:.1f}%;"></div>
-            <div class="prob-bar-loser" style="width: {away_prob*100:.1f}%;"></div>
-        '''
-    else:
+    # Progress bar: away team on LEFT, home team on RIGHT
+    # The favored team's bar is orange, the other is gray
+    if away_is_favored:
+        # Away team favored - left bar (away) is orange, right bar (home) is gray
         bar_html = f'''
             <div class="prob-bar-winner" style="width: {away_prob*100:.1f}%;"></div>
             <div class="prob-bar-loser" style="width: {home_prob*100:.1f}%;"></div>
+        '''
+    else:
+        # Home team favored - left bar (away) is gray, right bar (home) is orange
+        bar_html = f'''
+            <div class="prob-bar-loser" style="width: {away_prob*100:.1f}%;"></div>
+            <div class="prob-bar-winner" style="width: {home_prob*100:.1f}%;"></div>
         '''
 
     # Labels

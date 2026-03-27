@@ -319,8 +319,19 @@ def fetch_schedule(date: str) -> pd.DataFrame:
             home_team_id = row['HOME_TEAM_ID']
             away_team_id = row['VISITOR_TEAM_ID']
             game_status = row.get('GAME_STATUS_TEXT', 'Scheduled')
-            # Extract game time from status text (e.g., "7:30 pm ET")
-            game_time = game_status if 'pm' in game_status.lower() or 'am' in game_status.lower() else None
+
+            # Extract game time - try multiple sources
+            game_time = None
+            # First try GAME_STATUS_TEXT (e.g., "7:30 pm ET")
+            if 'pm' in game_status.lower() or 'am' in game_status.lower():
+                game_time = game_status
+            # Then try GAME_DATE_EST (full datetime)
+            elif 'GAME_DATE_EST' in row and pd.notna(row['GAME_DATE_EST']):
+                try:
+                    dt = pd.to_datetime(row['GAME_DATE_EST'])
+                    game_time = dt.strftime('%I:%M %p').lstrip('0')  # e.g., "7:30 PM"
+                except:
+                    pass
 
             if IS_CLOUD:
                 execute_query("""
