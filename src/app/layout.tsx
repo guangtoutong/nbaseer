@@ -17,6 +17,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh">
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7786364053868586"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="min-h-screen flex flex-col">
         <LocaleProvider>
           <Navbar />
