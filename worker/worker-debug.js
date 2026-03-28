@@ -1,3 +1,4 @@
+// v1.0.1 - debug version
 export default {
   async fetch(request, env, ctx) {
     var url = new URL(request.url);
