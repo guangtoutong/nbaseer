@@ -10,8 +10,9 @@ export function formatGameTime(
   timeStr: string | null,
   locale: Locale
 ): { time: string; timezone: string } {
-  if (!timeStr) {
-    return { time: "TBD", timezone: "" };
+  // Handle null, empty, or invalid time strings
+  if (!timeStr || timeStr === "0.0" || timeStr === "0" || timeStr.trim() === "") {
+    return { time: locale === 'zh' ? "待定" : "TBD", timezone: "" };
   }
 
   try {
@@ -113,6 +114,13 @@ export function getTimeDisplay(
   locale: Locale
 ): string {
   const { time, timezone } = formatGameTime(dateStr, timeStr, locale);
+
+  // If time is TBD, show the date instead
+  if (time === "TBD" || time === "待定") {
+    const dateDisplay = formatGameDate(dateStr, locale);
+    return `${dateDisplay} ${time}`;
+  }
+
   if (!timezone) return time;
   return `${time} ${timezone}`;
 }
