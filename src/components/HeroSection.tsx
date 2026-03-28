@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function HeroSection() {
   return (
     <section className="pt-32 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
@@ -24,12 +26,12 @@ export function HeroSection() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <button className="px-8 py-4 rounded-xl bg-gradient-to-br from-primary to-[#ff7948] text-white font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+              <Link href="/scores" className="px-8 py-4 rounded-xl bg-gradient-to-br from-primary to-[#ff7948] text-white font-bold shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
                 立即开始探索
-              </button>
-              <button className="px-8 py-4 rounded-xl bg-[#151a21]/70 backdrop-blur border border-white/10 text-white font-bold hover:bg-[#1b2028] transition-colors">
-                查看技术白皮
-              </button>
+              </Link>
+              <Link href="/whitepaper" className="px-8 py-4 rounded-xl bg-[#151a21]/70 backdrop-blur border border-white/10 text-white font-bold hover:bg-[#1b2028] transition-colors">
+                查看技术白皮书
+              </Link>
             </div>
           </div>
 

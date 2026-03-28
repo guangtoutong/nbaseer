@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useGamesContext } from "@/lib/GamesContext";
 import type { Game } from "@/lib/types";
 
@@ -92,6 +93,11 @@ function FeaturedGameCard({ game }: { game: Game }) {
             </div>
           </div>
         </div>
+
+        {/* View Details Link */}
+        <Link href={`/game/${game.id}`} className="mt-4 w-full py-2 text-xs font-bold text-slate-400 hover:text-primary border border-white/5 rounded-lg hover:border-primary/30 transition-all block text-center">
+          查看详情
+        </Link>
       </div>
 
       {/* AI Analysis Sidebar */}
@@ -197,6 +203,11 @@ function SmallGameCard({ game }: { game: Game }) {
           </div>
         </div>
       </div>
+
+      {/* View Details Link */}
+      <Link href={`/game/${game.id}`} className="mt-4 w-full py-2 text-xs font-bold text-slate-400 hover:text-primary border border-white/5 rounded-lg hover:border-primary/30 transition-all block text-center">
+        查看详情
+      </Link>
     </div>
   );
 }

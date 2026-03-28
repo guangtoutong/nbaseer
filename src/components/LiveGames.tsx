@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useGamesContext } from "@/lib/GamesContext";
 import type { Game } from "@/lib/types";
 
 function LiveGameCard({ game }: { game: Game }) {
   return (
-    <div className="flex-1 bg-[#151a21]/70 backdrop-blur p-6 rounded-xl border-l-4 border-blue-500 hover:bg-[#1b2028]/50 transition-colors">
+    <Link href={`/game/${game.id}`} className="flex-1 bg-[#151a21]/70 backdrop-blur p-6 rounded-xl border-l-4 border-blue-500 hover:bg-[#1b2028]/50 transition-colors block">
       {/* Teams & Scores */}
       <div className="flex justify-between mb-8">
         <div className="flex items-center gap-4">
@@ -57,7 +58,7 @@ function LiveGameCard({ game }: { game: Game }) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

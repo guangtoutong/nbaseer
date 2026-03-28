@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import type { Game } from "@/lib/types";
 
 // Mock data for fallback
@@ -66,9 +67,12 @@ function GameCard({ game }: { game: Game }) {
       </div>
 
       {/* View Details Button */}
-      <button className="mt-4 w-full py-2 text-xs font-bold text-slate-400 hover:text-primary border border-white/5 rounded-lg hover:border-primary/30 transition-all">
+      <Link
+        href={`/game/${game.id}`}
+        className="mt-4 w-full py-2 text-xs font-bold text-slate-400 hover:text-primary border border-white/5 rounded-lg hover:border-primary/30 transition-all block text-center"
+      >
         查看详情
-      </button>
+      </Link>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useGamesContext } from "@/lib/GamesContext";
 import type { Game } from "@/lib/types";
 
@@ -9,7 +10,7 @@ function CompletedGameCard({ game }: { game: Game }) {
   const actualSpread = game.away_score - game.home_score;
 
   return (
-    <div className="bg-[#0f141a] p-5 rounded-xl border border-white/5 hover:border-primary/20 transition-all">
+    <Link href={`/game/${game.id}`} className="bg-[#0f141a] p-5 rounded-xl border border-white/5 hover:border-primary/20 transition-all block">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">FINAL</span>
@@ -53,7 +54,7 @@ function CompletedGameCard({ game }: { game: Game }) {
           实际分差: {actualSpread > 0 ? '+' : ''}{actualSpread}
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
