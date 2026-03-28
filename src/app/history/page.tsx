@@ -106,7 +106,6 @@ export default function HistoryPage() {
       <div className="space-y-4">
         <h1 className="text-4xl font-black">
           预测历史
-          {useMockData && <span className="text-sm text-yellow-500 ml-3">(演示数据)</span>}
         </h1>
         <p className="text-slate-400">查看AI预测的历史记录和准确率统计</p>
       </div>
