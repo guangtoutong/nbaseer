@@ -5,7 +5,7 @@ import { useGamesContext } from "@/lib/GamesContext";
 import { useLocale } from "@/lib/LocaleContext";
 import type { Game } from "@/lib/types";
 
-function CompletedGameCard({ game }: { game: Game }) {
+function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const homeWon = game.home_score > game.away_score;
   const predicted = game.winner_correct === 1;
   const actualSpread = game.away_score - game.home_score;
@@ -22,7 +22,7 @@ function CompletedGameCard({ game }: { game: Game }) {
               : "bg-red-900/10 text-red-500 border-red-500/20"
           }`}
         >
-          {predicted ? "预测命中" : "未命中"}
+          {predicted ? (locale === 'zh' ? "预测命中" : "HIT") : (locale === 'zh' ? "未命中" : "MISS")}
         </span>
       </div>
 
@@ -50,9 +50,9 @@ function CompletedGameCard({ game }: { game: Game }) {
 
       {/* Odds Comparison */}
       <div className="text-[10px] text-slate-400 border-t border-white/5 pt-3">
-        <span className="block">预测分差: {game.predicted_spread?.toFixed(1) || '-'}</span>
+        <span className="block">{locale === 'zh' ? '预测分差' : 'Pred. Spread'}: {game.predicted_spread?.toFixed(1) || '-'}</span>
         <span className={`block mt-1 ${predicted ? "text-primary font-bold" : ""}`}>
-          实际分差: {actualSpread > 0 ? '+' : ''}{actualSpread}
+          {locale === 'zh' ? '实际分差' : 'Actual'}: {actualSpread > 0 ? '+' : ''}{actualSpread}
         </span>
       </div>
     </Link>
@@ -61,6 +61,7 @@ function CompletedGameCard({ game }: { game: Game }) {
 
 export function CompletedGames() {
   const { completed, isLoading, useMockData } = useGamesContext();
+  const { locale } = useLocale();
 
   if (isLoading) {
     return (
@@ -86,14 +87,13 @@ export function CompletedGames() {
       {/* Header */}
       <h2 className="text-2xl font-black flex items-center gap-3">
         <span className="w-2 h-8 bg-slate-500 rounded-full"></span>
-        已结束比赛 <span className="text-slate-400 text-sm font-medium tracking-normal">昨日赛果分析</span>
-        {useMockData && <span className="text-xs text-yellow-500 ml-2">(演示数据)</span>}
+        {locale === 'zh' ? '已结束比赛' : 'Completed'} <span className="text-slate-400 text-sm font-medium tracking-normal">{locale === 'zh' ? '昨日赛果分析' : 'Yesterday\'s Results'}</span>
       </h2>
 
       {/* Games Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {completed.map((game) => (
-          <CompletedGameCard key={game.id} game={game} />
+          <CompletedGameCard key={game.id} game={game} locale={locale} />
         ))}
       </div>
     </section>
