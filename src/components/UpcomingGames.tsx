@@ -15,7 +15,7 @@ const content = {
     hotPick: "热门预测",
     confidence: "置信度",
     winProb: "胜率",
-    vs: "VS",
+    vs: "@",
     predictedScore: "预测比分",
     predictedSpread: "预测分差",
     predictedTotal: "预测总分",
@@ -30,6 +30,8 @@ const content = {
     homeAdvantage: "主场作战，主场优势明显，近期状态稳定。",
     awayChallenge: "客场挑战，需关注关键球员状态及防守表现。",
     aiWinProb: "AI 预测胜率",
+    home: "主",
+    away: "客",
   },
   en: {
     upcoming: "Upcoming",
@@ -39,7 +41,7 @@ const content = {
     hotPick: "HOT PICK",
     confidence: "Confidence",
     winProb: "Win %",
-    vs: "VS",
+    vs: "@",
     predictedScore: "Pred. Score",
     predictedSpread: "Pred. Spread",
     predictedTotal: "Pred. Total",
@@ -54,6 +56,8 @@ const content = {
     homeAdvantage: "Playing at home with clear home-court advantage and stable recent form.",
     awayChallenge: "Away challenge - watch key player status and defensive performance.",
     aiWinProb: "AI Win Probability",
+    home: "Home",
+    away: "Away",
   },
 };
 
@@ -89,22 +93,28 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
           </div>
         </div>
 
-        {/* Teams */}
+        {/* Teams - Away @ Home format */}
         <div className="flex justify-around items-center py-2">
           <div className="text-center group">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#1b2028] border-2 border-primary flex items-center justify-center mb-3 shadow-2xl shadow-primary/20 transition-transform group-hover:scale-110">
-              <span className="text-xl md:text-2xl font-black">{game.home_abbr}</span>
-            </div>
-            <div className="text-base md:text-lg font-bold">{homeTeamName}</div>
-            <div className="text-xs md:text-sm text-primary font-bold">{homeWinProb.toFixed(1)}% {t.winProb}</div>
-          </div>
-          <div className="text-2xl md:text-3xl font-black text-slate-600">{t.vs}</div>
-          <div className="text-center group">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#1b2028] border-2 border-slate-600 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
-              <span className="text-xl md:text-2xl font-black">{game.away_abbr}</span>
+            <div className="relative">
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-bold bg-slate-700 text-slate-300 rounded">{t.away}</span>
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#1b2028] border-2 border-slate-600 flex items-center justify-center mb-3 transition-transform group-hover:scale-110">
+                <span className="text-xl md:text-2xl font-black">{game.away_abbr}</span>
+              </div>
             </div>
             <div className="text-base md:text-lg font-bold">{awayTeamName}</div>
             <div className="text-xs md:text-sm text-slate-400">{awayWinProb.toFixed(1)}% {t.winProb}</div>
+          </div>
+          <div className="text-2xl md:text-3xl font-black text-slate-600">{t.vs}</div>
+          <div className="text-center group">
+            <div className="relative">
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-bold bg-primary text-white rounded">{t.home}</span>
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#1b2028] border-2 border-primary flex items-center justify-center mb-3 shadow-2xl shadow-primary/20 transition-transform group-hover:scale-110">
+                <span className="text-xl md:text-2xl font-black">{game.home_abbr}</span>
+              </div>
+            </div>
+            <div className="text-base md:text-lg font-bold">{homeTeamName}</div>
+            <div className="text-xs md:text-sm text-primary font-bold">{homeWinProb.toFixed(1)}% {t.winProb}</div>
           </div>
         </div>
 
@@ -215,20 +225,27 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
         </span>
       </div>
 
+      {/* Away @ Home format */}
       <div className="space-y-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#1b2028] border border-white/10 flex items-center justify-center font-bold text-xs">{game.home_abbr}</div>
-            <span className="font-bold text-sm">{homeTeamName}</span>
-          </div>
-          <span className="font-black text-primary">{homeWinProb.toFixed(0)}%</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#1b2028] border border-white/10 flex items-center justify-center font-bold text-xs">{game.away_abbr}</div>
+            <div className="relative">
+              <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[8px] font-bold bg-slate-700 text-slate-300 rounded">{t.away}</span>
+              <div className="w-10 h-10 rounded-full bg-[#1b2028] border border-white/10 flex items-center justify-center font-bold text-xs">{game.away_abbr}</div>
+            </div>
             <span className="font-bold text-sm">{awayTeamName}</span>
           </div>
           <span className="font-black text-slate-400">{awayWinProb.toFixed(0)}%</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[8px] font-bold bg-primary text-white rounded">{t.home}</span>
+              <div className="w-10 h-10 rounded-full bg-[#1b2028] border border-primary/50 flex items-center justify-center font-bold text-xs">{game.home_abbr}</div>
+            </div>
+            <span className="font-bold text-sm">{homeTeamName}</span>
+          </div>
+          <span className="font-black text-primary">{homeWinProb.toFixed(0)}%</span>
         </div>
       </div>
 

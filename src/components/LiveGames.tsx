@@ -13,6 +13,8 @@ const content = {
     predictedSpread: "预测分差",
     liveWinProb: "实时胜率",
     predictedTotal: "预测总分",
+    home: "主",
+    away: "客",
   },
   en: {
     live: "Live",
@@ -21,6 +23,8 @@ const content = {
     predictedSpread: "Spread",
     liveWinProb: "Win %",
     predictedTotal: "Total",
+    home: "Home",
+    away: "Away",
   },
 };
 
@@ -31,15 +35,18 @@ function LiveGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
 
   return (
     <Link href={`/game/${game.id}`} className="flex-1 bg-[#151a21]/70 backdrop-blur p-6 rounded-xl border-l-4 border-blue-500 hover:bg-[#1b2028]/50 transition-colors block">
-      {/* Teams & Scores */}
+      {/* Teams & Scores - Away @ Home format */}
       <div className="flex justify-between mb-8">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white border-2 border-slate-700">
-            {game.home_abbr}
+          <div className="relative">
+            <span className="absolute -top-1 -right-1 px-1 py-0.5 text-[8px] font-bold bg-slate-700 text-slate-300 rounded z-10">{t.away}</span>
+            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white border-2 border-slate-700">
+              {game.away_abbr}
+            </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-black">{game.home_score}</div>
-            <div className="text-xs text-slate-400">{homeTeamName}</div>
+            <div className="text-2xl font-black">{game.away_score}</div>
+            <div className="text-xs text-slate-400">{awayTeamName}</div>
           </div>
         </div>
 
@@ -52,11 +59,14 @@ function LiveGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
 
         <div className="flex items-center gap-4 text-right">
           <div>
-            <div className="text-2xl font-black">{game.away_score}</div>
-            <div className="text-xs text-slate-400">{awayTeamName}</div>
+            <div className="text-2xl font-black">{game.home_score}</div>
+            <div className="text-xs text-slate-400">{homeTeamName}</div>
           </div>
-          <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white border-2 border-slate-700">
-            {game.away_abbr}
+          <div className="relative">
+            <span className="absolute -top-1 -left-1 px-1 py-0.5 text-[8px] font-bold bg-primary text-white rounded z-10">{t.home}</span>
+            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-bold text-white border-2 border-primary/50">
+              {game.home_abbr}
+            </div>
           </div>
         </div>
       </div>

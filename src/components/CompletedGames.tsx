@@ -13,6 +13,8 @@ const content = {
     miss: "未命中",
     predictedSpread: "预测分差",
     actualSpread: "实际分差",
+    home: "主",
+    away: "客",
   },
   en: {
     completed: "Completed",
@@ -21,6 +23,8 @@ const content = {
     miss: "MISS",
     predictedSpread: "Pred. Spread",
     actualSpread: "Actual",
+    home: "Home",
+    away: "Away",
   },
 };
 
@@ -50,25 +54,31 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
         </span>
       </div>
 
-      {/* Teams & Scores */}
+      {/* Teams & Scores - Away @ Home format */}
       <div className="space-y-3 mb-4">
-        <div className={`flex justify-between items-center ${!homeWon ? 'opacity-60' : ''}`}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold">
-              {game.home_abbr}
-            </div>
-            <span className="text-sm font-medium">{homeTeamName}</span>
-          </div>
-          <span className="font-black text-lg">{game.home_score}</span>
-        </div>
         <div className={`flex justify-between items-center ${homeWon ? 'opacity-60' : ''}`}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold">
-              {game.away_abbr}
+            <div className="relative">
+              <span className="absolute -top-0.5 -right-0.5 px-0.5 text-[7px] font-bold bg-slate-700 text-slate-300 rounded">{t.away}</span>
+              <div className="w-8 h-8 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold">
+                {game.away_abbr}
+              </div>
             </div>
             <span className="text-sm font-medium">{awayTeamName}</span>
           </div>
           <span className="font-black text-lg">{game.away_score}</span>
+        </div>
+        <div className={`flex justify-between items-center ${!homeWon ? 'opacity-60' : ''}`}>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <span className="absolute -top-0.5 -right-0.5 px-0.5 text-[7px] font-bold bg-primary text-white rounded">{t.home}</span>
+              <div className="w-8 h-8 rounded-full bg-slate-900 border border-primary/30 flex items-center justify-center text-[10px] font-bold">
+                {game.home_abbr}
+              </div>
+            </div>
+            <span className="text-sm font-medium">{homeTeamName}</span>
+          </div>
+          <span className="font-black text-lg">{game.home_score}</span>
         </div>
       </div>
 
