@@ -9,71 +9,82 @@ export function formatGameTime(
   dateStr: string,
   timeStr: string | null,
   locale: Locale
-): { time: string; timezone: string } {
+): { time: string; date: string; timezone: string } {
   // Handle null, empty, or invalid time strings
-  if (!timeStr || timeStr === "0.0" || timeStr === "0" || timeStr.trim() === "") {
-    return { time: locale === 'zh' ? "待定" : "TBD", timezone: "" };
+  if (!timeStr || timeStr === "0.0" || timeStr === "0" || timeStr.trim() === "" || timeStr === "TBD") {
+    return { time: locale === 'zh' ? "待定" : "TBD", date: "", timezone: "" };
+  }
+
+  // If it's "Final" or a clock time for live games, return as-is
+  if (timeStr === "Final" || /^\d+:\d+$/.test(timeStr) || /^\d+\.\d+$/.test(timeStr)) {
+    return { time: timeStr, date: "", timezone: "" };
   }
 
   try {
-    // Parse the date and time
-    // ESPN times are typically in US Eastern Time
     let dateTime: Date;
 
-    // Try to parse ISO format first
-    if (dateStr.includes("T")) {
+    // Check if timeStr is an ISO string (e.g., "2026-03-29T19:30Z")
+    if (timeStr.includes("T") && timeStr.includes("Z")) {
+      dateTime = new Date(timeStr);
+    } else if (dateStr.includes("T")) {
       dateTime = new Date(dateStr);
     } else {
-      // Combine date and time string
-      // Assume time is in format like "7:30 PM" or "19:30"
+      // Try to combine date and time
       const cleanTime = timeStr.replace(/\s+/g, " ").trim();
       dateTime = new Date(`${dateStr} ${cleanTime}`);
+    }
 
-      // If invalid, try alternative parsing
-      if (isNaN(dateTime.getTime())) {
-        // Just return the original time with ET timezone
-        if (locale === "zh") {
-          return { time: timeStr, timezone: "美东" };
-        }
-        return { time: timeStr, timezone: "ET" };
-      }
+    // If invalid date, return original
+    if (isNaN(dateTime.getTime())) {
+      return { time: timeStr, date: "", timezone: locale === "zh" ? "美东" : "ET" };
     }
 
     if (locale === "zh") {
       // Convert to Beijing time (UTC+8)
-      // US Eastern is UTC-5 (EST) or UTC-4 (EDT)
-      // Beijing is UTC+8, so difference is 13 hours (EST) or 12 hours (EDT)
-      const options: Intl.DateTimeFormatOptions = {
+      const timeOptions: Intl.DateTimeFormatOptions = {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
         timeZone: "Asia/Shanghai",
       };
-      const formatter = new Intl.DateTimeFormat("zh-CN", options);
+      const dateOptions: Intl.DateTimeFormatOptions = {
+        month: "numeric",
+        day: "numeric",
+        weekday: "short",
+        timeZone: "Asia/Shanghai",
+      };
+      const timeFormatter = new Intl.DateTimeFormat("zh-CN", timeOptions);
+      const dateFormatter = new Intl.DateTimeFormat("zh-CN", dateOptions);
       return {
-        time: formatter.format(dateTime),
+        time: timeFormatter.format(dateTime),
+        date: dateFormatter.format(dateTime),
         timezone: "北京时间",
       };
     } else {
       // US Eastern time
-      const options: Intl.DateTimeFormatOptions = {
+      const timeOptions: Intl.DateTimeFormatOptions = {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
         timeZone: "America/New_York",
       };
-      const formatter = new Intl.DateTimeFormat("en-US", options);
+      const dateOptions: Intl.DateTimeFormatOptions = {
+        month: "short",
+        day: "numeric",
+        weekday: "short",
+        timeZone: "America/New_York",
+      };
+      const timeFormatter = new Intl.DateTimeFormat("en-US", timeOptions);
+      const dateFormatter = new Intl.DateTimeFormat("en-US", dateOptions);
       return {
-        time: formatter.format(dateTime),
+        time: timeFormatter.format(dateTime),
+        date: dateFormatter.format(dateTime),
         timezone: "ET",
       };
     }
   } catch (error) {
     // Fallback: return original time
-    if (locale === "zh") {
-      return { time: timeStr, timezone: "美东" };
-    }
-    return { time: timeStr, timezone: "ET" };
+    return { time: timeStr, date: "", timezone: locale === "zh" ? "美东" : "ET" };
   }
 }
 
@@ -106,21 +117,28 @@ export function formatGameDate(dateStr: string, locale: Locale): string {
 
 /**
  * Simple time display component helper
- * Returns formatted string with time and timezone
+ * Returns formatted string with date, time and timezone
  */
 export function getTimeDisplay(
   dateStr: string,
   timeStr: string | null,
   locale: Locale
 ): string {
-  const { time, timezone } = formatGameTime(dateStr, timeStr, locale);
+  const { time, date, timezone } = formatGameTime(dateStr, timeStr, locale);
 
-  // If time is TBD, show the date instead
+  // If time is TBD, show the original date
   if (time === "TBD" || time === "待定") {
     const dateDisplay = formatGameDate(dateStr, locale);
     return `${dateDisplay} ${time}`;
   }
 
+  // If no timezone (live games, final), just return time
   if (!timezone) return time;
+
+  // Include date for scheduled games
+  if (date) {
+    return `${date} ${time} ${timezone}`;
+  }
+
   return `${time} ${timezone}`;
 }
