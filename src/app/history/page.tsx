@@ -56,7 +56,7 @@ export default function HistoryPage() {
       try {
         const response = await fetch('/api/stats');
         if (!response.ok) throw new Error('API error');
-        const data: StatsResponse = await response.json();
+        const data = await response.json() as StatsResponse;
 
         if (data.overall && data.overall.total_predictions > 0) {
           setStats(data);

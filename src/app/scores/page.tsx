@@ -100,7 +100,7 @@ export default function ScoresPage() {
       try {
         const response = await fetch(`/api/games?date=${selectedDate}&limit=50`);
         if (!response.ok) throw new Error('API error');
-        const data = await response.json();
+        const data = await response.json() as { games: Game[] };
 
         if (data.games && data.games.length > 0) {
           setGames(data.games);
