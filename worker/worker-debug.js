@@ -16,7 +16,7 @@ export default {
     if (url.pathname === "/test") {
       var hasDB = env.DB ? "yes" : "no";
       var hasKey = env.ODDS_API_KEY ? "yes (length:" + env.ODDS_API_KEY.length + ")" : "no";
-      return new Response(JSON.stringify({db: hasDB, oddsKey: hasKey}), {headers:headers});
+      return new Response(JSON.stringify({version: "1.0.2", db: hasDB, oddsKey: hasKey}), {headers:headers});
     }
 
     return new Response(JSON.stringify({endpoints:["/sync","/test"]}), {headers:headers});
