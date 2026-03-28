@@ -1,4 +1,5 @@
 name = "nbaseer-worker"
+account_id = "371932342a48f3c3e71ac3588a19e0c5"
 main = "worker-debug.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
