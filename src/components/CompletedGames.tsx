@@ -5,10 +5,34 @@ import { useGamesContext } from "@/lib/GamesContext";
 import { useLocale } from "@/lib/LocaleContext";
 import type { Game } from "@/lib/types";
 
+const content = {
+  zh: {
+    completed: "已结束比赛",
+    yesterdayResults: "昨日赛果分析",
+    hit: "预测命中",
+    miss: "未命中",
+    predictedSpread: "预测分差",
+    actualSpread: "实际分差",
+  },
+  en: {
+    completed: "Completed",
+    yesterdayResults: "Yesterday's Results",
+    hit: "HIT",
+    miss: "MISS",
+    predictedSpread: "Pred. Spread",
+    actualSpread: "Actual",
+  },
+};
+
 function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
+  const t = content[locale];
   const homeWon = game.home_score > game.away_score;
   const predicted = game.winner_correct === 1;
   const actualSpread = game.away_score - game.home_score;
+
+  // Get team names based on locale
+  const homeTeamName = locale === 'zh' ? (game.home_team_cn || game.home_team) : (game.home_team || game.home_team_cn);
+  const awayTeamName = locale === 'zh' ? (game.away_team_cn || game.away_team) : (game.away_team || game.away_team_cn);
 
   return (
     <Link href={`/game/${game.id}`} className="bg-[#0f141a] p-5 rounded-xl border border-white/5 hover:border-primary/20 transition-all block">
@@ -22,7 +46,7 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
               : "bg-red-900/10 text-red-500 border-red-500/20"
           }`}
         >
-          {predicted ? (locale === 'zh' ? "预测命中" : "HIT") : (locale === 'zh' ? "未命中" : "MISS")}
+          {predicted ? t.hit : t.miss}
         </span>
       </div>
 
@@ -33,7 +57,7 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
             <div className="w-8 h-8 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold">
               {game.home_abbr}
             </div>
-            <span className="text-sm font-medium">{game.home_team_cn}</span>
+            <span className="text-sm font-medium">{homeTeamName}</span>
           </div>
           <span className="font-black text-lg">{game.home_score}</span>
         </div>
@@ -42,7 +66,7 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
             <div className="w-8 h-8 rounded-full bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold">
               {game.away_abbr}
             </div>
-            <span className="text-sm font-medium">{game.away_team_cn}</span>
+            <span className="text-sm font-medium">{awayTeamName}</span>
           </div>
           <span className="font-black text-lg">{game.away_score}</span>
         </div>
@@ -50,9 +74,9 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
 
       {/* Odds Comparison */}
       <div className="text-[10px] text-slate-400 border-t border-white/5 pt-3">
-        <span className="block">{locale === 'zh' ? '预测分差' : 'Pred. Spread'}: {game.predicted_spread?.toFixed(1) || '-'}</span>
+        <span className="block">{t.predictedSpread}: {game.predicted_spread?.toFixed(1) || '-'}</span>
         <span className={`block mt-1 ${predicted ? "text-primary font-bold" : ""}`}>
-          {locale === 'zh' ? '实际分差' : 'Actual'}: {actualSpread > 0 ? '+' : ''}{actualSpread}
+          {t.actualSpread}: {actualSpread > 0 ? '+' : ''}{actualSpread}
         </span>
       </div>
     </Link>
@@ -62,6 +86,7 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
 export function CompletedGames() {
   const { completed, isLoading, useMockData } = useGamesContext();
   const { locale } = useLocale();
+  const t = content[locale];
 
   if (isLoading) {
     return (
@@ -87,7 +112,7 @@ export function CompletedGames() {
       {/* Header */}
       <h2 className="text-2xl font-black flex items-center gap-3">
         <span className="w-2 h-8 bg-slate-500 rounded-full"></span>
-        {locale === 'zh' ? '已结束比赛' : 'Completed'} <span className="text-slate-400 text-sm font-medium tracking-normal">{locale === 'zh' ? '昨日赛果分析' : 'Yesterday\'s Results'}</span>
+        {t.completed} <span className="text-slate-400 text-sm font-medium tracking-normal">{t.yesterdayResults}</span>
       </h2>
 
       {/* Games Grid */}

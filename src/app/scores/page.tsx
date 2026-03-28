@@ -6,19 +6,55 @@ import type { Game } from "@/lib/types";
 import { useLocale } from "@/lib/LocaleContext";
 import { getTimeDisplay } from "@/lib/timeUtils";
 
+const content = {
+  zh: {
+    title: "NBA 比分中心",
+    subtitle: "实时比分、赛程安排和比赛数据",
+    yesterday: "昨天",
+    today: "今天",
+    tomorrow: "明天",
+    live: "进行中",
+    upcoming: "即将开始",
+    final: "已结束",
+    games: "场",
+    noGames: "该日期暂无比赛",
+    viewDetails: "查看详情",
+    quarter: "第 {n} 节",
+  },
+  en: {
+    title: "NBA Scores",
+    subtitle: "Live scores, schedules and game data",
+    yesterday: "Yesterday",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    live: "Live",
+    upcoming: "Upcoming",
+    final: "Final",
+    games: "games",
+    noGames: "No games on this date",
+    viewDetails: "View Details",
+    quarter: "Q{n}",
+  },
+};
+
 // Mock data for fallback
 const mockGames: Game[] = [
-  { id: 1, date: "2024-03-27", time: "08:42", status: "live", period: 4, home_team_id: 14, away_team_id: 10, home_score: 104, away_score: 101, season: 2024, postseason: 0, home_abbr: "LAL", away_abbr: "GSW", home_team_cn: "湖人", away_team_cn: "勇士" },
-  { id: 2, date: "2024-03-27", time: "03:15", status: "live", period: 3, home_team_id: 2, away_team_id: 17, home_score: 76, away_score: 82, season: 2024, postseason: 0, home_abbr: "BOS", away_abbr: "MIL", home_team_cn: "凯尔特人", away_team_cn: "雄鹿" },
-  { id: 3, date: "2024-03-27", time: "07:30 PM", status: "scheduled", period: 0, home_team_id: 24, away_team_id: 8, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "PHX", away_abbr: "DEN", home_team_cn: "太阳", away_team_cn: "掘金" },
-  { id: 4, date: "2024-03-27", time: "09:00 PM", status: "scheduled", period: 0, home_team_id: 16, away_team_id: 23, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "MIA", away_abbr: "PHI", home_team_cn: "热火", away_team_cn: "76人" },
+  { id: 1, date: "2024-03-27", time: "08:42", status: "live", period: 4, home_team_id: 14, away_team_id: 10, home_score: 104, away_score: 101, season: 2024, postseason: 0, home_abbr: "LAL", away_abbr: "GSW", home_team: "Lakers", away_team: "Warriors", home_team_cn: "湖人", away_team_cn: "勇士" },
+  { id: 2, date: "2024-03-27", time: "03:15", status: "live", period: 3, home_team_id: 2, away_team_id: 17, home_score: 76, away_score: 82, season: 2024, postseason: 0, home_abbr: "BOS", away_abbr: "MIL", home_team: "Celtics", away_team: "Bucks", home_team_cn: "凯尔特人", away_team_cn: "雄鹿" },
+  { id: 3, date: "2024-03-27", time: "07:30 PM", status: "scheduled", period: 0, home_team_id: 24, away_team_id: 8, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "PHX", away_abbr: "DEN", home_team: "Suns", away_team: "Nuggets", home_team_cn: "太阳", away_team_cn: "掘金" },
+  { id: 4, date: "2024-03-27", time: "09:00 PM", status: "scheduled", period: 0, home_team_id: 16, away_team_id: 23, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "MIA", away_abbr: "PHI", home_team: "Heat", away_team: "76ers", home_team_cn: "热火", away_team_cn: "76人" },
 ];
 
 function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
+  const t = content[locale];
   const isLive = game.status === "live";
   const isFinal = game.status === "final";
   const homeWinning = (game.home_score || 0) > (game.away_score || 0);
   const timeDisplay = getTimeDisplay(game.date, game.time, locale);
+
+  // Get team names based on locale
+  const homeTeamName = locale === 'zh' ? (game.home_team_cn || game.home_team) : (game.home_team || game.home_team_cn);
+  const awayTeamName = locale === 'zh' ? (game.away_team_cn || game.away_team) : (game.away_team || game.away_team_cn);
 
   return (
     <div className={`bg-[#0f141a] p-5 rounded-xl border transition-all ${
@@ -30,7 +66,7 @@ function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">
-              {locale === 'zh' ? `第 ${game.period} 节` : `Q${game.period}`} {game.time}
+              {t.quarter.replace('{n}', String(game.period))} {game.time}
             </span>
           </div>
         ) : isFinal ? (
@@ -50,7 +86,7 @@ function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs">
               {game.home_abbr}
             </div>
-            <span className="font-medium">{game.home_team_cn}</span>
+            <span className="font-medium">{homeTeamName}</span>
           </div>
           <span className={`text-xl font-black ${game.home_score ? "" : "text-slate-600"}`}>
             {game.home_score || "-"}
@@ -61,7 +97,7 @@ function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs">
               {game.away_abbr}
             </div>
-            <span className="font-medium">{game.away_team_cn}</span>
+            <span className="font-medium">{awayTeamName}</span>
           </div>
           <span className={`text-xl font-black ${game.away_score ? "" : "text-slate-600"}`}>
             {game.away_score || "-"}
@@ -74,7 +110,7 @@ function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
         href={`/game/${game.id}`}
         className="mt-4 w-full py-2 text-xs font-bold text-slate-400 hover:text-primary border border-white/5 rounded-lg hover:border-primary/30 transition-all block text-center"
       >
-        查看详情
+        {t.viewDetails}
       </Link>
     </div>
   );
@@ -82,6 +118,7 @@ function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
 
 export default function ScoresPage() {
   const { locale } = useLocale();
+  const t = content[locale];
   const today = new Date();
   const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
@@ -91,14 +128,10 @@ export default function ScoresPage() {
     formatDate(new Date(today.getTime() + 86400000)),
   ];
 
-  const dateLabels: Record<string, string> = locale === 'zh' ? {
-    [dates[0]]: "昨天",
-    [dates[1]]: "今天",
-    [dates[2]]: "明天",
-  } : {
-    [dates[0]]: "Yesterday",
-    [dates[1]]: "Today",
-    [dates[2]]: "Tomorrow",
+  const dateLabels: Record<string, string> = {
+    [dates[0]]: t.yesterday,
+    [dates[1]]: t.today,
+    [dates[2]]: t.tomorrow,
   };
 
   const [selectedDate, setSelectedDate] = useState(dates[1]);
@@ -142,10 +175,10 @@ export default function ScoresPage() {
       {/* Page Header */}
       <div className="space-y-4">
         <h1 className="text-4xl font-black">
-          {locale === 'zh' ? 'NBA 比分中心' : 'NBA Scores'}
+          {t.title}
         </h1>
         <p className="text-slate-400">
-          {locale === 'zh' ? '实时比分、赛程安排和比赛数据' : 'Live scores, schedules and game data'}
+          {t.subtitle}
         </p>
       </div>
 
@@ -180,8 +213,8 @@ export default function ScoresPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black flex items-center gap-3">
                 <span className="w-2 h-6 bg-blue-500 rounded-full" />
-                {locale === 'zh' ? '进行中' : 'Live'}
-                <span className="text-blue-400 text-sm font-medium">({liveGames.length} {locale === 'zh' ? '场' : 'games'})</span>
+                {t.live}
+                <span className="text-blue-400 text-sm font-medium">({liveGames.length} {t.games})</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {liveGames.map((game) => (
@@ -196,8 +229,8 @@ export default function ScoresPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black flex items-center gap-3">
                 <span className="w-2 h-6 bg-primary rounded-full" />
-                {locale === 'zh' ? '即将开始' : 'Upcoming'}
-                <span className="text-primary text-sm font-medium">({scheduledGames.length} {locale === 'zh' ? '场' : 'games'})</span>
+                {t.upcoming}
+                <span className="text-primary text-sm font-medium">({scheduledGames.length} {t.games})</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {scheduledGames.map((game) => (
@@ -212,8 +245,8 @@ export default function ScoresPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black flex items-center gap-3">
                 <span className="w-2 h-6 bg-slate-500 rounded-full" />
-                {locale === 'zh' ? '已结束' : 'Final'}
-                <span className="text-slate-400 text-sm font-medium">({finalGames.length} {locale === 'zh' ? '场' : 'games'})</span>
+                {t.final}
+                <span className="text-slate-400 text-sm font-medium">({finalGames.length} {t.games})</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {finalGames.map((game) => (
@@ -225,7 +258,7 @@ export default function ScoresPage() {
 
           {games.length === 0 && (
             <div className="text-center py-20 text-slate-400">
-              <p className="text-lg">{locale === 'zh' ? '该日期暂无比赛' : 'No games on this date'}</p>
+              <p className="text-lg">{t.noGames}</p>
             </div>
           )}
         </>

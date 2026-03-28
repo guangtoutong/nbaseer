@@ -2,6 +2,65 @@
 
 import { useState, useEffect } from "react";
 import type { StatsResponse } from "@/lib/types";
+import { useLocale } from "@/lib/LocaleContext";
+import type { Locale } from "@/lib/i18n";
+
+const content = {
+  zh: {
+    title: "预测历史",
+    subtitle: "查看AI预测的历史记录和准确率统计",
+    overallAccuracy: "总体准确率",
+    winPrediction: "胜负预测",
+    totalPredictions: "累计预测",
+    games: "场比赛",
+    correctCount: "命中次数",
+    correctPredictions: "场预测正确",
+    spreadAccuracy: "分差准确率",
+    spreadBet: "让分盘",
+    monthlyPerformance: "月度表现",
+    hit: "命中",
+    predictions: "预测",
+    filterAll: "全部",
+    filterCorrect: "命中",
+    filterIncorrect: "未命中",
+    recentPredictions: "最近预测记录",
+    date: "日期",
+    matchup: "对阵",
+    predictedWinRate: "预测胜率",
+    score: "比分",
+    result: "结果",
+    vs: "vs",
+    noRecords: "暂无预测记录",
+    months: ['', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+  },
+  en: {
+    title: "Prediction History",
+    subtitle: "View AI prediction records and accuracy statistics",
+    overallAccuracy: "Overall Accuracy",
+    winPrediction: "Win Prediction",
+    totalPredictions: "Total Predictions",
+    games: "games",
+    correctCount: "Correct Count",
+    correctPredictions: "correct predictions",
+    spreadAccuracy: "Spread Accuracy",
+    spreadBet: "Spread Bet",
+    monthlyPerformance: "Monthly Performance",
+    hit: "Hit",
+    predictions: "Predictions",
+    filterAll: "All",
+    filterCorrect: "Correct",
+    filterIncorrect: "Incorrect",
+    recentPredictions: "Recent Predictions",
+    date: "Date",
+    matchup: "Matchup",
+    predictedWinRate: "Win Prob",
+    score: "Score",
+    result: "Result",
+    vs: "vs",
+    noRecords: "No prediction records",
+    months: ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  },
+};
 
 // Mock data for fallback
 const mockStats: StatsResponse = {
@@ -39,13 +98,18 @@ const mockStats: StatsResponse = {
 
 type FilterType = "all" | "correct" | "incorrect";
 
-function formatMonth(monthStr: string): string {
+function formatMonth(monthStr: string, locale: Locale): string {
   const [year, month] = monthStr.split('-');
-  const months = ['', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  const months = content[locale].months;
+  if (locale === 'zh') {
+    return `${months[parseInt(month)]} ${year}`;
+  }
   return `${months[parseInt(month)]} ${year}`;
 }
 
 export default function HistoryPage() {
+  const { locale } = useLocale();
+  const t = content[locale];
   const [filter, setFilter] = useState<FilterType>("all");
   const [stats, setStats] = useState<StatsResponse>(mockStats);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,32 +169,32 @@ export default function HistoryPage() {
       {/* Page Header */}
       <div className="space-y-4">
         <h1 className="text-4xl font-black">
-          预测历史
+          {t.title}
         </h1>
-        <p className="text-slate-400">查看AI预测的历史记录和准确率统计</p>
+        <p className="text-slate-400">{t.subtitle}</p>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-primary/90 to-[#ff7948] p-6 rounded-xl">
-          <div className="text-sm opacity-80 mb-1">总体准确率</div>
+          <div className="text-sm opacity-80 mb-1">{t.overallAccuracy}</div>
           <div className="text-4xl font-black">{accuracy.toFixed(1)}%</div>
-          <div className="text-sm opacity-80 mt-2">胜负预测</div>
+          <div className="text-sm opacity-80 mt-2">{t.winPrediction}</div>
         </div>
         <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl">
-          <div className="text-sm text-slate-400 mb-1">累计预测</div>
+          <div className="text-sm text-slate-400 mb-1">{t.totalPredictions}</div>
           <div className="text-4xl font-black">{stats.overall.total_predictions.toLocaleString()}</div>
-          <div className="text-sm text-slate-400 mt-2">场比赛</div>
+          <div className="text-sm text-slate-400 mt-2">{t.games}</div>
         </div>
         <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl">
-          <div className="text-sm text-slate-400 mb-1">命中次数</div>
+          <div className="text-sm text-slate-400 mb-1">{t.correctCount}</div>
           <div className="text-4xl font-black text-green-500">{stats.overall.correct_winners.toLocaleString()}</div>
-          <div className="text-sm text-slate-400 mt-2">场预测正确</div>
+          <div className="text-sm text-slate-400 mt-2">{t.correctPredictions}</div>
         </div>
         <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl">
-          <div className="text-sm text-slate-400 mb-1">分差准确率</div>
+          <div className="text-sm text-slate-400 mb-1">{t.spreadAccuracy}</div>
           <div className="text-4xl font-black text-blue-400">{(stats.overall.spread_accuracy || 0).toFixed(1)}%</div>
-          <div className="text-sm text-slate-400 mt-2">让分盘</div>
+          <div className="text-sm text-slate-400 mt-2">{t.spreadBet}</div>
         </div>
       </div>
 
@@ -139,13 +203,13 @@ export default function HistoryPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-black flex items-center gap-3">
             <span className="w-2 h-6 bg-blue-500 rounded-full" />
-            月度表现
+            {t.monthlyPerformance}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {stats.monthly.slice(0, 4).map((stat) => (
               <div key={stat.month} className="bg-[#0f141a] border border-white/5 p-5 rounded-xl">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-lg font-bold">{formatMonth(stat.month)}</span>
+                  <span className="text-lg font-bold">{formatMonth(stat.month, locale)}</span>
                   <span className={`text-2xl font-black ${stat.accuracy >= 60 ? "text-green-500" : "text-slate-400"}`}>
                     {stat.accuracy.toFixed(1)}%
                   </span>
@@ -157,8 +221,8 @@ export default function HistoryPage() {
                   />
                 </div>
                 <div className="flex justify-between text-xs text-slate-400 mt-2">
-                  <span>{stat.correct} 命中</span>
-                  <span>{stat.total} 预测</span>
+                  <span>{stat.correct} {t.hit}</span>
+                  <span>{stat.total} {t.predictions}</span>
                 </div>
               </div>
             ))}
@@ -174,7 +238,7 @@ export default function HistoryPage() {
             filter === "all" ? "bg-primary text-white" : "bg-[#151a21] text-slate-400 hover:bg-[#1b2028]"
           }`}
         >
-          全部
+          {t.filterAll}
         </button>
         <button
           onClick={() => setFilter("correct")}
@@ -182,7 +246,7 @@ export default function HistoryPage() {
             filter === "correct" ? "bg-green-600 text-white" : "bg-[#151a21] text-slate-400 hover:bg-[#1b2028]"
           }`}
         >
-          命中
+          {t.filterCorrect}
         </button>
         <button
           onClick={() => setFilter("incorrect")}
@@ -190,7 +254,7 @@ export default function HistoryPage() {
             filter === "incorrect" ? "bg-red-600 text-white" : "bg-[#151a21] text-slate-400 hover:bg-[#1b2028]"
           }`}
         >
-          未命中
+          {t.filterIncorrect}
         </button>
       </div>
 
@@ -198,18 +262,18 @@ export default function HistoryPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-black flex items-center gap-3">
           <span className="w-2 h-6 bg-primary rounded-full" />
-          最近预测记录
+          {t.recentPredictions}
         </h2>
 
         <div className="bg-[#0f141a] border border-white/5 rounded-xl overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-white/5 text-left text-xs text-slate-400 uppercase">
-                <th className="p-4">日期</th>
-                <th className="p-4">对阵</th>
-                <th className="p-4">预测胜率</th>
-                <th className="p-4">比分</th>
-                <th className="p-4">结果</th>
+                <th className="p-4">{t.date}</th>
+                <th className="p-4">{t.matchup}</th>
+                <th className="p-4">{t.predictedWinRate}</th>
+                <th className="p-4">{t.score}</th>
+                <th className="p-4">{t.result}</th>
               </tr>
             </thead>
             <tbody>
@@ -219,7 +283,7 @@ export default function HistoryPage() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <span className="font-bold">{prediction.home_team}</span>
-                      <span className="text-slate-500">vs</span>
+                      <span className="text-slate-500">{t.vs}</span>
                       <span className="font-bold">{prediction.away_team}</span>
                     </div>
                   </td>
@@ -235,7 +299,7 @@ export default function HistoryPage() {
                         ? "bg-green-500/20 text-green-500"
                         : "bg-red-500/20 text-red-500"
                     }`}>
-                      {prediction.winner_correct === 1 ? "命中" : "未命中"}
+                      {prediction.winner_correct === 1 ? t.filterCorrect : t.filterIncorrect}
                     </span>
                   </td>
                 </tr>
@@ -245,7 +309,7 @@ export default function HistoryPage() {
 
           {filteredHistory.length === 0 && (
             <div className="text-center py-10 text-slate-400">
-              暂无预测记录
+              {t.noRecords}
             </div>
           )}
         </div>
