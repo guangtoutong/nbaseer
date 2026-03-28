@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useLocale } from "@/lib/LocaleContext";
 
 const content = {
@@ -26,6 +27,11 @@ export function Footer() {
   const { locale } = useLocale();
   const t = content[locale];
   const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const [currentTime, setCurrentTime] = useState<string>("");
+
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleString(dateLocale));
+  }, [dateLocale]);
 
   return (
     <footer className="bg-slate-950 w-full py-12 px-8 mt-20 border-t border-slate-800/50">
@@ -35,7 +41,7 @@ export function Footer() {
 
         {/* Copyright & Sync Time */}
         <p className="text-sm tracking-wide text-slate-500">
-          © 2024 nbaseer. {t.copyright}. {t.syncTime}: {new Date().toLocaleString(dateLocale)}
+          © 2024 nbaseer. {t.copyright}. {t.syncTime}: {currentTime}
         </p>
 
         {/* Links */}
