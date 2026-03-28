@@ -203,7 +203,7 @@ async function generatePredictions(db: D1Database, oddsData: any[]): Promise<num
   // Get scheduled games that need predictions
   const games = await db.prepare(`
     SELECT g.id, g.home_team_id, g.away_team_id,
-           h.abbr as home_abbr, a.abbr as away_abbr
+           h.abbreviation as home_abbr, a.abbreviation as away_abbr
     FROM games g
     JOIN teams h ON g.home_team_id = h.id
     JOIN teams a ON g.away_team_id = a.id

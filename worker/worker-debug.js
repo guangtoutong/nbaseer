@@ -1,4 +1,4 @@
-// v1.0.1 - debug version
+// v1.0.2 - fixed abbreviation column name
 export default {
   async fetch(request, env, ctx) {
     var url = new URL(request.url);
@@ -161,7 +161,7 @@ async function runSync(db, oddsKey) {
   }
 
   try {
-    var sql2 = "SELECT g.id,g.home_team_id,g.away_team_id,h.abbr as home_abbr,a.abbr as away_abbr FROM games g JOIN teams h ON g.home_team_id=h.id JOIN teams a ON g.away_team_id=a.id WHERE g.status='scheduled'";
+    var sql2 = "SELECT g.id,g.home_team_id,g.away_team_id,h.abbreviation as home_abbr,a.abbreviation as away_abbr FROM games g JOIN teams h ON g.home_team_id=h.id JOIN teams a ON g.away_team_id=a.id WHERE g.status='scheduled'";
     var gamesResult = await db.prepare(sql2).all();
     var gamesList = gamesResult.results || [];
     log.scheduledGames = gamesList.length;
