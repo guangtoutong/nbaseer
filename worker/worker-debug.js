@@ -1,4 +1,4 @@
-// v1.0.3 - with ODDS_API_KEY secret
+// v1.0.4
 export default {
   async fetch(request, env, ctx) {
     var url = new URL(request.url);
@@ -16,7 +16,7 @@ export default {
     if (url.pathname === "/test") {
       var hasDB = env.DB ? "yes" : "no";
       var hasKey = env.ODDS_API_KEY ? "yes (length:" + env.ODDS_API_KEY.length + ")" : "no";
-      return new Response(JSON.stringify({version: "1.0.3", db: hasDB, oddsKey: hasKey}), {headers:headers});
+      return new Response(JSON.stringify({version: "1.0.4", db: hasDB, oddsKey: hasKey}), {headers:headers});
     }
 
     return new Response(JSON.stringify({endpoints:["/sync","/test"]}), {headers:headers});
