@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useGamesContext } from "@/lib/GamesContext";
+import { useLocale } from "@/lib/LocaleContext";
+import { getTimeDisplay } from "@/lib/timeUtils";
 import type { Game } from "@/lib/types";
 
-function FeaturedGameCard({ game }: { game: Game }) {
+function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const confidence = (game.confidence || 0) * 100;
   const homeWinProb = (game.home_win_prob || 0.5) * 100;
   const awayWinProb = (game.away_win_prob || 0.5) * 100;
@@ -14,6 +16,7 @@ function FeaturedGameCard({ game }: { game: Game }) {
   const predictedAwayScore = game.predicted_spread
     ? Math.round(110 + (game.predicted_spread / 2))
     : 108;
+  const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   return (
     <div className="md:col-span-2 bg-[#151a21]/70 backdrop-blur rounded-xl overflow-hidden border border-white/5 flex flex-col md:flex-row">
@@ -21,8 +24,8 @@ function FeaturedGameCard({ game }: { game: Game }) {
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <span className="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded uppercase tracking-tighter">热门预测</span>
-            <p className="text-sm text-slate-400 mt-2">今天 {game.time || '待定'} EST</p>
+            <span className="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded uppercase tracking-tighter">{locale === 'zh' ? '热门预测' : 'HOT PICK'}</span>
+            <p className="text-sm text-slate-400 mt-2">{timeDisplay}</p>
           </div>
           <div className="text-right">
             <div className="text-sm font-medium text-slate-400">置信度</div>
@@ -130,7 +133,7 @@ function FeaturedGameCard({ game }: { game: Game }) {
   );
 }
 
-function SmallGameCard({ game }: { game: Game }) {
+function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const homeWinProb = (game.home_win_prob || 0.5) * 100;
   const awayWinProb = (game.away_win_prob || 0.5) * 100;
   const predictedHomeScore = game.predicted_spread
@@ -139,11 +142,12 @@ function SmallGameCard({ game }: { game: Game }) {
   const predictedAwayScore = game.predicted_spread
     ? Math.round(110 + (game.predicted_spread / 2))
     : 108;
+  const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   return (
     <div className="bg-[#151a21]/70 backdrop-blur p-6 rounded-xl border border-white/5 flex flex-col hover:border-primary/30 transition-all">
       <div className="flex justify-between items-center mb-6">
-        <span className="text-xs font-bold text-slate-400">今天 {game.time || '待定'} EST</span>
+        <span className="text-xs font-bold text-slate-400">{timeDisplay}</span>
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
           <span className="text-[10px] text-slate-400">即将开始</span>
@@ -214,6 +218,7 @@ function SmallGameCard({ game }: { game: Game }) {
 
 export function UpcomingGames() {
   const { scheduled, isLoading, useMockData } = useGamesContext();
+  const { locale } = useLocale();
 
   if (isLoading) {
     return (
@@ -257,11 +262,11 @@ export function UpcomingGames() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Featured Prediction Card */}
-        <FeaturedGameCard game={featuredGame} />
+        <FeaturedGameCard game={featuredGame} locale={locale} />
 
         {/* Small Prediction Cards */}
         {otherGames.slice(0, 1).map((game) => (
-          <SmallGameCard key={game.id} game={game} />
+          <SmallGameCard key={game.id} game={game} locale={locale} />
         ))}
       </div>
 
@@ -269,7 +274,7 @@ export function UpcomingGames() {
       {otherGames.length > 1 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {otherGames.slice(1, 4).map((game) => (
-            <SmallGameCard key={game.id} game={game} />
+            <SmallGameCard key={game.id} game={game} locale={locale} />
           ))}
         </div>
       )}

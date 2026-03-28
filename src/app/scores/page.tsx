@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { Game } from "@/lib/types";
+import { useLocale } from "@/lib/LocaleContext";
+import { getTimeDisplay } from "@/lib/timeUtils";
 
 // Mock data for fallback
 const mockGames: Game[] = [
@@ -12,10 +14,11 @@ const mockGames: Game[] = [
   { id: 4, date: "2024-03-27", time: "09:00 PM", status: "scheduled", period: 0, home_team_id: 16, away_team_id: 23, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "MIA", away_abbr: "PHI", home_team_cn: "热火", away_team_cn: "76人" },
 ];
 
-function GameCard({ game }: { game: Game }) {
+function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const isLive = game.status === "live";
   const isFinal = game.status === "final";
   const homeWinning = (game.home_score || 0) > (game.away_score || 0);
+  const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   return (
     <div className={`bg-[#0f141a] p-5 rounded-xl border transition-all ${
@@ -27,13 +30,13 @@ function GameCard({ game }: { game: Game }) {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">
-              第 {game.period} 节 {game.time}
+              {locale === 'zh' ? `第 ${game.period} 节` : `Q${game.period}`} {game.time}
             </span>
           </div>
         ) : isFinal ? (
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">FINAL</span>
         ) : (
-          <span className="text-xs text-slate-400">{game.time}</span>
+          <span className="text-xs text-slate-400">{timeDisplay}</span>
         )}
         {isLive && (
           <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">LIVE</span>
@@ -78,6 +81,7 @@ function GameCard({ game }: { game: Game }) {
 }
 
 export default function ScoresPage() {
+  const { locale } = useLocale();
   const today = new Date();
   const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
@@ -87,10 +91,14 @@ export default function ScoresPage() {
     formatDate(new Date(today.getTime() + 86400000)),
   ];
 
-  const dateLabels: Record<string, string> = {
+  const dateLabels: Record<string, string> = locale === 'zh' ? {
     [dates[0]]: "昨天",
     [dates[1]]: "今天",
     [dates[2]]: "明天",
+  } : {
+    [dates[0]]: "Yesterday",
+    [dates[1]]: "Today",
+    [dates[2]]: "Tomorrow",
   };
 
   const [selectedDate, setSelectedDate] = useState(dates[1]);
@@ -134,10 +142,11 @@ export default function ScoresPage() {
       {/* Page Header */}
       <div className="space-y-4">
         <h1 className="text-4xl font-black">
-          NBA 比分中心
-          {useMockData && <span className="text-sm text-yellow-500 ml-3">(演示数据)</span>}
+          {locale === 'zh' ? 'NBA 比分中心' : 'NBA Scores'}
         </h1>
-        <p className="text-slate-400">实时比分、赛程安排和比赛数据</p>
+        <p className="text-slate-400">
+          {locale === 'zh' ? '实时比分、赛程安排和比赛数据' : 'Live scores, schedules and game data'}
+        </p>
       </div>
 
       {/* Date Selector */}
@@ -171,12 +180,12 @@ export default function ScoresPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black flex items-center gap-3">
                 <span className="w-2 h-6 bg-blue-500 rounded-full" />
-                进行中
-                <span className="text-blue-400 text-sm font-medium">({liveGames.length} 场)</span>
+                {locale === 'zh' ? '进行中' : 'Live'}
+                <span className="text-blue-400 text-sm font-medium">({liveGames.length} {locale === 'zh' ? '场' : 'games'})</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {liveGames.map((game) => (
-                  <GameCard key={game.id} game={game} />
+                  <GameCard key={game.id} game={game} locale={locale} />
                 ))}
               </div>
             </section>
@@ -187,12 +196,12 @@ export default function ScoresPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black flex items-center gap-3">
                 <span className="w-2 h-6 bg-primary rounded-full" />
-                即将开始
-                <span className="text-primary text-sm font-medium">({scheduledGames.length} 场)</span>
+                {locale === 'zh' ? '即将开始' : 'Upcoming'}
+                <span className="text-primary text-sm font-medium">({scheduledGames.length} {locale === 'zh' ? '场' : 'games'})</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {scheduledGames.map((game) => (
-                  <GameCard key={game.id} game={game} />
+                  <GameCard key={game.id} game={game} locale={locale} />
                 ))}
               </div>
             </section>
@@ -203,12 +212,12 @@ export default function ScoresPage() {
             <section className="space-y-4">
               <h2 className="text-xl font-black flex items-center gap-3">
                 <span className="w-2 h-6 bg-slate-500 rounded-full" />
-                已结束
-                <span className="text-slate-400 text-sm font-medium">({finalGames.length} 场)</span>
+                {locale === 'zh' ? '已结束' : 'Final'}
+                <span className="text-slate-400 text-sm font-medium">({finalGames.length} {locale === 'zh' ? '场' : 'games'})</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {finalGames.map((game) => (
-                  <GameCard key={game.id} game={game} />
+                  <GameCard key={game.id} game={game} locale={locale} />
                 ))}
               </div>
             </section>
@@ -216,7 +225,7 @@ export default function ScoresPage() {
 
           {games.length === 0 && (
             <div className="text-center py-20 text-slate-400">
-              <p className="text-lg">该日期暂无比赛</p>
+              <p className="text-lg">{locale === 'zh' ? '该日期暂无比赛' : 'No games on this date'}</p>
             </div>
           )}
         </>

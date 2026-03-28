@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useGamesContext } from "@/lib/GamesContext";
+import { useLocale } from "@/lib/LocaleContext";
 import type { Game } from "@/lib/types";
 
 function CompletedGameCard({ game }: { game: Game }) {
