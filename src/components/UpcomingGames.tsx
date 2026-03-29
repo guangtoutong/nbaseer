@@ -66,12 +66,8 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
   const confidence = (game.confidence || 0) * 100;
   const homeWinProb = (game.home_win_prob || 0.5) * 100;
   const awayWinProb = (game.away_win_prob || 0.5) * 100;
-  const predictedHomeScore = game.predicted_spread
-    ? Math.round(110 - (game.predicted_spread / 2))
-    : 110;
-  const predictedAwayScore = game.predicted_spread
-    ? Math.round(110 + (game.predicted_spread / 2))
-    : 108;
+  const predictedHomeScore = game.predicted_home_score || Math.round(110 - (game.predicted_spread || 0) / 2);
+  const predictedAwayScore = game.predicted_away_score || Math.round(110 + (game.predicted_spread || 0) / 2);
   const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   // Get team names based on locale
@@ -103,6 +99,7 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
               </div>
             </div>
             <div className="text-base md:text-lg font-bold">{awayTeamName}</div>
+            <div className="text-2xl md:text-3xl font-black text-slate-300 my-1">{predictedAwayScore}</div>
             <div className="text-xs md:text-sm text-slate-400">{awayWinProb.toFixed(1)}% {t.winProb}</div>
           </div>
           <div className="text-2xl md:text-3xl font-black text-slate-600">{t.vs}</div>
@@ -114,16 +111,13 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
               </div>
             </div>
             <div className="text-base md:text-lg font-bold">{homeTeamName}</div>
+            <div className="text-2xl md:text-3xl font-black text-primary my-1">{predictedHomeScore}</div>
             <div className="text-xs md:text-sm text-primary font-bold">{homeWinProb.toFixed(1)}% {t.winProb}</div>
           </div>
         </div>
 
         {/* AI Predictions */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[#151a21]/30 p-3 rounded-lg text-center">
-            <div className="text-[10px] text-slate-400 mb-1">{t.predictedScore}</div>
-            <div className="text-sm md:text-base font-black">{predictedHomeScore} - {predictedAwayScore}</div>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
           <div className="bg-[#151a21]/30 p-3 rounded-lg text-center">
             <div className="text-[10px] text-slate-400 mb-1">{t.predictedSpread}</div>
             <div className="text-sm md:text-base font-black text-primary">
@@ -203,12 +197,8 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const t = content[locale];
   const homeWinProb = (game.home_win_prob || 0.5) * 100;
   const awayWinProb = (game.away_win_prob || 0.5) * 100;
-  const predictedHomeScore = game.predicted_spread
-    ? Math.round(110 - (game.predicted_spread / 2))
-    : 110;
-  const predictedAwayScore = game.predicted_spread
-    ? Math.round(110 + (game.predicted_spread / 2))
-    : 108;
+  const predictedHomeScore = game.predicted_home_score || Math.round(110 - (game.predicted_spread || 0) / 2);
+  const predictedAwayScore = game.predicted_away_score || Math.round(110 + (game.predicted_spread || 0) / 2);
   const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   // Get team names based on locale
@@ -235,7 +225,11 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
             </div>
             <span className="font-bold text-sm">{awayTeamName}</span>
           </div>
-          <span className="font-black text-slate-400">{awayWinProb.toFixed(0)}%</span>
+          <div className="text-right">
+            <span className="font-black text-lg text-slate-300">{predictedAwayScore}</span>
+            <span className="text-slate-500 mx-2">|</span>
+            <span className="font-black text-slate-400">{awayWinProb.toFixed(0)}%</span>
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -245,20 +239,24 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
             </div>
             <span className="font-bold text-sm">{homeTeamName}</span>
           </div>
-          <span className="font-black text-primary">{homeWinProb.toFixed(0)}%</span>
+          <div className="text-right">
+            <span className="font-black text-lg text-primary">{predictedHomeScore}</span>
+            <span className="text-slate-500 mx-2">|</span>
+            <span className="font-black text-primary">{homeWinProb.toFixed(0)}%</span>
+          </div>
         </div>
       </div>
 
       <div className="space-y-2 py-4 border-t border-white/10">
         <div className="flex justify-between text-[11px] text-slate-400">
-          <span>{t.predictedScore}</span>
-          <span className="font-bold text-white">{predictedHomeScore} - {predictedAwayScore}</span>
-        </div>
-        <div className="flex justify-between text-[11px] text-slate-400">
           <span>{t.predictedSpread}</span>
           <span className="font-bold text-primary">
             {game.predicted_spread && game.predicted_spread > 0 ? '+' : ''}{game.predicted_spread?.toFixed(1) || '-'}
           </span>
+        </div>
+        <div className="flex justify-between text-[11px] text-slate-400">
+          <span>{t.predictedTotal}</span>
+          <span className="font-bold text-white">{game.predicted_total?.toFixed(1) || '-'}</span>
         </div>
       </div>
 

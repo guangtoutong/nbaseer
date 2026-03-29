@@ -61,6 +61,8 @@ export async function GET(request: Request) {
         at.name_cn as away_team_cn,
         p.home_win_prob,
         p.away_win_prob,
+        p.predicted_home_score,
+        p.predicted_away_score,
         p.predicted_spread,
         p.predicted_total,
         p.confidence
