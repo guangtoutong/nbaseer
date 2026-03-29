@@ -16,9 +16,14 @@ export async function GET() {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Get dates in YYYY-MM-DD format (use Beijing time UTC+8)
+    const now = new Date();
+    const beijingOffset = 8 * 60 * 60 * 1000;
+    const beijingNow = new Date(now.getTime() + beijingOffset);
+    const today = beijingNow.toISOString().split('T')[0];
+    const yesterday = new Date(beijingNow.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const tomorrow = new Date(beijingNow.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const dayAfterTomorrow = new Date(beijingNow.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Get live games
     const liveGames = await db.prepare(`
@@ -62,11 +67,11 @@ export async function GET() {
       LEFT JOIN teams ht ON g.home_team_id = ht.id
       LEFT JOIN teams at ON g.away_team_id = at.id
       LEFT JOIN predictions p ON g.id = p.game_id
-      WHERE g.status = 'scheduled' AND (g.date = ? OR g.date = ?)
+      WHERE g.status = 'scheduled' AND g.date IN (?, ?, ?)
       ORDER BY g.date ASC, g.time ASC
-    `).bind(today, tomorrow).all();
+    `).bind(today, tomorrow, dayAfterTomorrow).all();
 
-    // Get today's completed games
+    // Get completed games (today and yesterday)
     const completedGames = await db.prepare(`
       SELECT
         g.*,
@@ -87,9 +92,9 @@ export async function GET() {
       LEFT JOIN teams at ON g.away_team_id = at.id
       LEFT JOIN predictions p ON g.id = p.game_id
       LEFT JOIN prediction_results pr ON g.id = pr.game_id
-      WHERE g.status = 'final' AND g.date = ?
-      ORDER BY g.time DESC
-    `).bind(today).all();
+      WHERE g.status = 'final' AND g.date IN (?, ?)
+      ORDER BY g.date DESC, g.time DESC
+    `).bind(yesterday, today).all();
 
     return Response.json({
       date: today,
