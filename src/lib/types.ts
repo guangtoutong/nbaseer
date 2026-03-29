@@ -52,6 +52,8 @@ export interface Game {
   // Prediction fields
   home_win_prob?: number;
   away_win_prob?: number;
+  predicted_home_score?: number;
+  predicted_away_score?: number;
   predicted_spread?: number;
   predicted_total?: number;
   confidence?: number;
