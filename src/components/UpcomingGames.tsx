@@ -66,8 +66,10 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
   const confidence = (game.confidence || 0) * 100;
   const homeWinProb = (game.home_win_prob || 0.5) * 100;
   const awayWinProb = (game.away_win_prob || 0.5) * 100;
-  const predictedHomeScore = game.predicted_home_score || Math.round(110 - (game.predicted_spread || 0) / 2);
-  const predictedAwayScore = game.predicted_away_score || Math.round(110 + (game.predicted_spread || 0) / 2);
+  const total = game.predicted_total || 220;
+  const spread = game.predicted_spread || 0;
+  const predictedHomeScore = game.predicted_home_score || Math.round((total - spread) / 2);
+  const predictedAwayScore = game.predicted_away_score || Math.round((total + spread) / 2);
   const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   // Get team names based on locale
@@ -197,8 +199,10 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const t = content[locale];
   const homeWinProb = (game.home_win_prob || 0.5) * 100;
   const awayWinProb = (game.away_win_prob || 0.5) * 100;
-  const predictedHomeScore = game.predicted_home_score || Math.round(110 - (game.predicted_spread || 0) / 2);
-  const predictedAwayScore = game.predicted_away_score || Math.round(110 + (game.predicted_spread || 0) / 2);
+  const total = game.predicted_total || 220;
+  const spread = game.predicted_spread || 0;
+  const predictedHomeScore = game.predicted_home_score || Math.round((total - spread) / 2);
+  const predictedAwayScore = game.predicted_away_score || Math.round((total + spread) / 2);
   const timeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   // Get team names based on locale
