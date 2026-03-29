@@ -1,4 +1,4 @@
-// v1.0.4
+// v1.0.5
 export default {
   async fetch(request, env, ctx) {
     var url = new URL(request.url);
@@ -16,7 +16,7 @@ export default {
     if (url.pathname === "/test") {
       var hasDB = env.DB ? "yes" : "no";
       var hasKey = env.ODDS_API_KEY ? "yes (length:" + env.ODDS_API_KEY.length + ")" : "no";
-      return new Response(JSON.stringify({version: "1.0.4", db: hasDB, oddsKey: hasKey}), {headers:headers});
+      return new Response(JSON.stringify({version: "1.0.5", db: hasDB, oddsKey: hasKey}), {headers:headers});
     }
 
     return new Response(JSON.stringify({endpoints:["/sync","/test"]}), {headers:headers});
@@ -228,7 +228,7 @@ async function runSync(db, oddsKey) {
       var predAwayScore = Math.round((total + spread) / 2);
 
       try {
-        var sql3 = "INSERT INTO predictions (game_id,home_win_prob,away_win_prob,predicted_home_score,predicted_away_score,predicted_spread,predicted_total,confidence,updated_at) VALUES (?,?,?,?,?,?,?,?,datetime('now')) ON CONFLICT(game_id) DO UPDATE SET home_win_prob=excluded.home_win_prob,away_win_prob=excluded.away_win_prob,predicted_home_score=excluded.predicted_home_score,predicted_away_score=excluded.predicted_away_score,predicted_spread=excluded.predicted_spread,predicted_total=excluded.predicted_total,confidence=excluded.confidence,updated_at=datetime('now')";
+        var sql3 = "INSERT INTO predictions (game_id,home_win_prob,away_win_prob,predicted_home_score,predicted_away_score,predicted_spread,predicted_total,confidence) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(game_id) DO UPDATE SET home_win_prob=excluded.home_win_prob,away_win_prob=excluded.away_win_prob,predicted_home_score=excluded.predicted_home_score,predicted_away_score=excluded.predicted_away_score,predicted_spread=excluded.predicted_spread,predicted_total=excluded.predicted_total,confidence=excluded.confidence";
         await db.prepare(sql3).bind(game.id, homeWinProb, awayWinProb, predHomeScore, predAwayScore, spread, total, conf).run();
         log.predictionsUpdated++;
       } catch (err) {
