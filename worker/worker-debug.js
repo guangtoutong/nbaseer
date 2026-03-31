@@ -1,4 +1,4 @@
-// v1.0.5
+// v1.0.6 - Fixed timezone: use Beijing time (UTC+8)
 export default {
   async fetch(request, env, ctx) {
     var url = new URL(request.url);
