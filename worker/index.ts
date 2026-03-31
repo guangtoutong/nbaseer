@@ -474,18 +474,26 @@ async function updateTeamStats(db: D1Database): Promise<void> {
   }
 }
 
+// Get Beijing time (UTC+8) date string
+function getBeijingDate(offsetDays: number = 0): string {
+  const now = new Date();
+  const beijingOffset = 8 * 60 * 60 * 1000; // UTC+8
+  const beijingTime = new Date(now.getTime() + beijingOffset + offsetDays * 24 * 60 * 60 * 1000);
+  return beijingTime.toISOString().split('T')[0];
+}
+
 // Main scheduled handler
 export default {
   async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     console.log('=== Starting NBA Data Update ===');
     const startTime = Date.now();
 
-    // Get dates to fetch
-    const today = new Date();
+    // Get dates to fetch (using Beijing time UTC+8 to match API)
     const dates = [
-      new Date(today.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      today.toISOString().split('T')[0],
-      new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      getBeijingDate(-1),  // 昨天
+      getBeijingDate(0),   // 今天
+      getBeijingDate(1),   // 明天
+      getBeijingDate(2),   // 后天 (确保覆盖 API 查询范围)
     ];
 
     // Fetch games from ESPN

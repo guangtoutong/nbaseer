@@ -68,14 +68,23 @@ function oddsToProb(odds) {
   return Math.abs(odds) / (Math.abs(odds) + 100);
 }
 
+// Get Beijing time (UTC+8) date string
+function getBeijingDate(offsetDays) {
+  var now = new Date();
+  var beijingOffset = 8 * 60 * 60 * 1000; // UTC+8
+  var beijingTime = new Date(now.getTime() + beijingOffset + offsetDays * 24 * 60 * 60 * 1000);
+  return beijingTime.toISOString().split("T")[0];
+}
+
 async function runSync(db, oddsKey) {
   var log = {gamesUpdated: 0, oddsFound: 0, predictionsUpdated: 0, errors: []};
 
-  var today = new Date();
+  // Use Beijing time (UTC+8) to match API timezone
   var dates = [
-    new Date(today.getTime() - 86400000).toISOString().split("T")[0],
-    today.toISOString().split("T")[0],
-    new Date(today.getTime() + 86400000).toISOString().split("T")[0]
+    getBeijingDate(-1),  // 昨天
+    getBeijingDate(0),   // 今天
+    getBeijingDate(1),   // 明天
+    getBeijingDate(2)    // 后天 (确保覆盖 API 查询范围)
   ];
 
   for (var i = 0; i < dates.length; i++) {
