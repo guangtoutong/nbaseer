@@ -12,6 +12,9 @@ const content = {
     privacy: "隐私",
     apiDocs: "API文档",
     support: "支持",
+    recommended: "推荐工具",
+    solomdDesc: "轻量级 Markdown 编辑器",
+    storyalterDesc: "AI 网文创作平台",
   },
   en: {
     copyright: "AI-Powered NBA Prediction",
@@ -20,6 +23,9 @@ const content = {
     privacy: "Privacy",
     apiDocs: "API Docs",
     support: "Support",
+    recommended: "Recommended",
+    solomdDesc: "Lightweight Markdown Editor",
+    storyalterDesc: "AI Writing Platform",
   },
 };
 
@@ -43,6 +49,31 @@ export function Footer() {
         <p className="text-sm tracking-wide text-slate-500">
           © 2024 nbaseer. {t.copyright}. {t.syncTime}: {currentTime}
         </p>
+
+        {/* Recommended */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-600">{t.recommended}:</span>
+          <a
+            href="https://solomd.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all"
+          >
+            <span>✏️</span>
+            <span>SoloMD</span>
+            <span className="text-slate-600">- {t.solomdDesc}</span>
+          </a>
+          <a
+            href="https://storyalter.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all"
+          >
+            <span>📖</span>
+            <span>StoryAlter</span>
+            <span className="text-slate-600">- {t.storyalterDesc}</span>
+          </a>
+        </div>
 
         {/* Links */}
         <div className="flex gap-8">
