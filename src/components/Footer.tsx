@@ -59,7 +59,7 @@ export function Footer() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all"
           >
-            <span>✏️</span>
+            <span>📝</span>
             <span>SoloMD</span>
             <span className="text-slate-600">- {t.solomdDesc}</span>
           </a>
