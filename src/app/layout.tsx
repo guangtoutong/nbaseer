@@ -3,6 +3,7 @@ import "./globals.css";
 import { LocaleProvider } from "@/lib/LocaleContext";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { AdBanner } from "@/components/AdBanner";
 
 export const metadata: Metadata = {
   title: {
@@ -103,6 +104,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <LocaleProvider>
           <Navbar />
+          <AdBanner />
           <main className="flex-1">{children}</main>
           <Footer />
         </LocaleProvider>

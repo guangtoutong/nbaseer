@@ -51,28 +51,8 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Right side - Ads, Language Toggle & Mobile menu */}
+        {/* Right side - Language Toggle & Mobile menu */}
         <div className="flex items-center gap-4">
-          {/* Ads */}
-          <div className="hidden lg:flex items-center gap-2">
-            <a
-              href="https://solomd.app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-md bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 text-xs text-slate-400 hover:text-slate-200 transition-all"
-            >
-              📝 SoloMD
-            </a>
-            <a
-              href="https://storyalter.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-md bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 text-xs text-slate-400 hover:text-slate-200 transition-all"
-            >
-              📖 StoryAlter
-            </a>
-          </div>
-
           {/* Language Toggle */}
           <button
             onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
