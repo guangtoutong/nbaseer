@@ -1,5 +1,9 @@
-// v1.0.6 - Fixed timezone: use Beijing time (UTC+8)
+// v1.0.7 - Added scheduled event handler for cron trigger
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runSync(env.DB, env.ODDS_API_KEY));
+  },
+
   async fetch(request, env, ctx) {
     var url = new URL(request.url);
     var headers = {"Access-Control-Allow-Origin":"*","Content-Type":"application/json"};
