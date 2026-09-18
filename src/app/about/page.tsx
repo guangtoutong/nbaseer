@@ -2,6 +2,7 @@
 
 import { useLocale } from "@/lib/LocaleContext";
 import { BACKTEST } from "@/lib/backtest";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 const content = {
   zh: {
@@ -240,8 +241,8 @@ export default function AboutPage() {
         <h2 className="text-2xl font-bold">{t.contact}</h2>
         <p className="text-slate-400">
           {t.contactText}{" "}
-          <a href="mailto:support@nbaseer.com" className="text-primary hover:underline">
-            support@nbaseer.com
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
+            {CONTACT_EMAIL}
           </a>
         </p>
       </section>

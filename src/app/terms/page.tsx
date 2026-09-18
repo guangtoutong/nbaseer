@@ -2,6 +2,7 @@
 
 import { DocPage, Section } from "@/components/DocPage";
 import { useLocale } from "@/lib/LocaleContext";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 const content = {
   zh: {
@@ -64,8 +65,8 @@ export default function TermsPage() {
       <Section heading={t.s7}>
         <p>
           {t.s7a}{" "}
-          <a href="mailto:support@nbaseer.com" className="text-primary hover:underline">
-            support@nbaseer.com
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary hover:underline">
+            {CONTACT_EMAIL}
           </a>
         </p>
       </Section>
