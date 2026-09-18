@@ -1,248 +1,222 @@
-# NBAseer 部署指南 (Web 端操作)
+# NBAseer 部署与运维
 
-## 前置要求
+## 架构
 
-1. Cloudflare 账号
-2. GitHub 账号（代码已推送到 GitHub）
-3. (可选) The Odds API Key - 从 https://the-odds-api.com/ 免费获取
-
----
-
-## 第一步：创建 D1 数据库
-
-1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
-2. 左侧菜单选择 **Workers & Pages** → **D1 SQL Database**
-3. 点击 **Create database**
-4. 输入名称：`nbaseer-db`
-5. 点击 **Create**
-6. **记录 Database ID**（页面上会显示，格式如 `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`）
-
----
-
-## 第二步：初始化数据库表
-
-1. 在刚创建的 `nbaseer-db` 页面，点击 **Console** 标签
-2. 复制以下 SQL 并粘贴到控制台执行：
-
-```sql
--- NBA Teams
-CREATE TABLE IF NOT EXISTS teams (
-  id INTEGER PRIMARY KEY,
-  abbreviation TEXT UNIQUE NOT NULL,
-  city TEXT NOT NULL,
-  name TEXT NOT NULL,
-  full_name TEXT NOT NULL,
-  name_cn TEXT,
-  conference TEXT,
-  division TEXT
-);
-
--- NBA Games
-CREATE TABLE IF NOT EXISTS games (
-  id INTEGER PRIMARY KEY,
-  date TEXT NOT NULL,
-  time TEXT,
-  status TEXT NOT NULL DEFAULT 'scheduled',
-  period INTEGER DEFAULT 0,
-  time_remaining TEXT,
-  home_team_id INTEGER NOT NULL,
-  away_team_id INTEGER NOT NULL,
-  home_score INTEGER DEFAULT 0,
-  away_score INTEGER DEFAULT 0,
-  season INTEGER,
-  postseason INTEGER DEFAULT 0,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (home_team_id) REFERENCES teams(id),
-  FOREIGN KEY (away_team_id) REFERENCES teams(id)
-);
-
--- Predictions
-CREATE TABLE IF NOT EXISTS predictions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  game_id INTEGER UNIQUE NOT NULL,
-  home_win_prob REAL,
-  away_win_prob REAL,
-  predicted_home_score INTEGER,
-  predicted_away_score INTEGER,
-  predicted_spread REAL,
-  predicted_total REAL,
-  confidence REAL,
-  analysis TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (game_id) REFERENCES games(id)
-);
-
--- Odds
-CREATE TABLE IF NOT EXISTS odds (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  game_id INTEGER NOT NULL,
-  bookmaker TEXT NOT NULL,
-  home_ml REAL,
-  away_ml REAL,
-  spread_home REAL,
-  spread_home_price REAL,
-  spread_away REAL,
-  spread_away_price REAL,
-  total_over REAL,
-  total_over_price REAL,
-  total_under REAL,
-  total_under_price REAL,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (game_id) REFERENCES games(id)
-);
-
--- Team Stats
-CREATE TABLE IF NOT EXISTS team_stats (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  team_id INTEGER NOT NULL,
-  season INTEGER NOT NULL,
-  games_played INTEGER DEFAULT 0,
-  wins INTEGER DEFAULT 0,
-  losses INTEGER DEFAULT 0,
-  home_wins INTEGER DEFAULT 0,
-  home_losses INTEGER DEFAULT 0,
-  away_wins INTEGER DEFAULT 0,
-  away_losses INTEGER DEFAULT 0,
-  pts_per_game REAL,
-  opp_pts_per_game REAL,
-  last_10_wins INTEGER DEFAULT 0,
-  streak INTEGER DEFAULT 0,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(team_id, season),
-  FOREIGN KEY (team_id) REFERENCES teams(id)
-);
-
--- Prediction Results
-CREATE TABLE IF NOT EXISTS prediction_results (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  game_id INTEGER UNIQUE NOT NULL,
-  predicted_winner_id INTEGER,
-  actual_winner_id INTEGER,
-  predicted_spread REAL,
-  actual_spread REAL,
-  predicted_total REAL,
-  actual_total REAL,
-  winner_correct INTEGER DEFAULT 0,
-  spread_correct INTEGER DEFAULT 0,
-  total_correct INTEGER DEFAULT 0,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (game_id) REFERENCES games(id)
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_games_date ON games(date);
-CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
-CREATE INDEX IF NOT EXISTS idx_predictions_game ON predictions(game_id);
-CREATE INDEX IF NOT EXISTS idx_odds_game ON odds(game_id);
+```
+ESPN Scoreboard API ──┐
+                      ├──> Worker (nbaseer-worker, cron */10) ──> D1 (nbaseer-db)
+The Odds API ─────────┘                                            │
+                                                                   v
+                                                  Pages (nbaseer) ──> nbaseer.pages.dev
 ```
 
-3. 点击 **Execute** 执行
+- **Worker** 负责全部写入：拉赛程比分、结算已完赛的预测、更新 Elo 评分、生成新预测。
+- **Pages** 只读 D1，不写。
+- 预测模型在 `worker/model.mjs`，Worker 与 `scripts/backfill.mjs` 共用同一份实现。
 
-4. 再执行以下 SQL 插入球队数据：
+---
 
-```sql
-INSERT OR IGNORE INTO teams (id, abbreviation, city, name, full_name, name_cn, conference, division) VALUES
-(1, 'ATL', 'Atlanta', 'Hawks', 'Atlanta Hawks', '老鹰', 'East', 'Southeast'),
-(2, 'BOS', 'Boston', 'Celtics', 'Boston Celtics', '凯尔特人', 'East', 'Atlantic'),
-(3, 'BKN', 'Brooklyn', 'Nets', 'Brooklyn Nets', '篮网', 'East', 'Atlantic'),
-(4, 'CHA', 'Charlotte', 'Hornets', 'Charlotte Hornets', '黄蜂', 'East', 'Southeast'),
-(5, 'CHI', 'Chicago', 'Bulls', 'Chicago Bulls', '公牛', 'East', 'Central'),
-(6, 'CLE', 'Cleveland', 'Cavaliers', 'Cleveland Cavaliers', '骑士', 'East', 'Central'),
-(7, 'DAL', 'Dallas', 'Mavericks', 'Dallas Mavericks', '独行侠', 'West', 'Southwest'),
-(8, 'DEN', 'Denver', 'Nuggets', 'Denver Nuggets', '掘金', 'West', 'Northwest'),
-(9, 'DET', 'Detroit', 'Pistons', 'Detroit Pistons', '活塞', 'East', 'Central'),
-(10, 'GSW', 'Golden State', 'Warriors', 'Golden State Warriors', '勇士', 'West', 'Pacific'),
-(11, 'HOU', 'Houston', 'Rockets', 'Houston Rockets', '火箭', 'West', 'Southwest'),
-(12, 'IND', 'Indiana', 'Pacers', 'Indiana Pacers', '步行者', 'East', 'Central'),
-(13, 'LAC', 'Los Angeles', 'Clippers', 'Los Angeles Clippers', '快船', 'West', 'Pacific'),
-(14, 'LAL', 'Los Angeles', 'Lakers', 'Los Angeles Lakers', '湖人', 'West', 'Pacific'),
-(15, 'MEM', 'Memphis', 'Grizzlies', 'Memphis Grizzlies', '灰熊', 'West', 'Southwest'),
-(16, 'MIA', 'Miami', 'Heat', 'Miami Heat', '热火', 'East', 'Southeast'),
-(17, 'MIL', 'Milwaukee', 'Bucks', 'Milwaukee Bucks', '雄鹿', 'East', 'Central'),
-(18, 'MIN', 'Minnesota', 'Timberwolves', 'Minnesota Timberwolves', '森林狼', 'West', 'Northwest'),
-(19, 'NOP', 'New Orleans', 'Pelicans', 'New Orleans Pelicans', '鹈鹕', 'West', 'Southwest'),
-(20, 'NYK', 'New York', 'Knicks', 'New York Knicks', '尼克斯', 'East', 'Atlantic'),
-(21, 'OKC', 'Oklahoma City', 'Thunder', 'Oklahoma City Thunder', '雷霆', 'West', 'Northwest'),
-(22, 'ORL', 'Orlando', 'Magic', 'Orlando Magic', '魔术', 'East', 'Southeast'),
-(23, 'PHI', 'Philadelphia', '76ers', 'Philadelphia 76ers', '76人', 'East', 'Atlantic'),
-(24, 'PHX', 'Phoenix', 'Suns', 'Phoenix Suns', '太阳', 'West', 'Pacific'),
-(25, 'POR', 'Portland', 'Trail Blazers', 'Portland Trail Blazers', '开拓者', 'West', 'Northwest'),
-(26, 'SAC', 'Sacramento', 'Kings', 'Sacramento Kings', '国王', 'West', 'Pacific'),
-(27, 'SAS', 'San Antonio', 'Spurs', 'San Antonio Spurs', '马刺', 'West', 'Southwest'),
-(28, 'TOR', 'Toronto', 'Raptors', 'Toronto Raptors', '猛龙', 'East', 'Atlantic'),
-(29, 'UTA', 'Utah', 'Jazz', 'Utah Jazz', '爵士', 'West', 'Northwest'),
-(30, 'WAS', 'Washington', 'Wizards', 'Washington Wizards', '奇才', 'East', 'Southeast');
+## 一、首次部署
+
+### 1. 创建 D1 数据库
+
+Cloudflare Dashboard → **Workers & Pages** → **D1** → **Create database**，命名 `nbaseer-db`，记下 Database ID。
+
+### 2. 建表并写入球队数据
+
+在 D1 的 **Console** 里执行 `db/schema.sql` 的全部内容。该文件已包含 30 支球队的插入语句。
+
+或用命令行：
+
+```bash
+cd worker
+npx wrangler d1 execute nbaseer-db --remote --file=../db/schema.sql
 ```
 
----
+> Worker 每次运行都会执行幂等迁移（`team_ratings`、`meta` 表和新增字段），所以老库不需要手工补结构。
 
-## 第三步：部署 Pages 前端
+### 3. 写入 Elo 初始评分
 
-1. 在 Cloudflare Dashboard，选择 **Workers & Pages**
-2. 点击 **Create** → **Pages** → **Connect to Git**
-3. 选择你的 GitHub 仓库 `guangtoutong/nbaseer`
-4. 配置构建设置：
-   - **Framework preset**: Next.js
-   - **Build command**: `npx @cloudflare/next-on-pages`
-   - **Build output directory**: `.vercel/output/static`
-5. 点击 **Save and Deploy**
+**这一步不能跳过。** 没有它，开赛前两周所有球队评分都是 1500，预测会全是 50%。
 
----
+```bash
+cd worker
+npx wrangler d1 execute nbaseer-db --remote --file=../db/seed-ratings.sql
+```
 
-## 第四步：绑定 D1 数据库到 Pages
+`db/seed-ratings.sql` 由回测脚本生成，内容是上赛季 1,322 场比赛回放后的评分，并按 75% 结转到新赛季。
 
-1. 部署完成后，进入 **nbaseer** 项目
-2. 点击 **Settings** → **Functions** → **D1 database bindings**
-3. 点击 **Add binding**
-   - **Variable name**: `DB`
-   - **D1 database**: 选择 `nbaseer-db`
-4. 点击 **Save**
-5. 返回 **Deployments** 页面，点击最新部署的 **...** → **Retry deployment**
+### 4. 部署 Worker
 
----
+Worker 通过 GitHub Actions 自动部署（`.github/workflows/deploy-worker.yml`），推送 `worker/**` 即触发。
 
-## 第五步：创建数据获取 Worker（可选）
+需要在 GitHub 仓库 **Settings → Secrets and variables → Actions** 配置：
 
-如果需要自动获取真实 NBA 数据：
+| Secret | 必需 | 说明 |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | 是 | 权限需包含 **Workers Scripts: Edit** 和 **D1: Edit** |
+| `ODDS_API_KEY` | 否 | 不配置则模型独立出数，站点照常工作 |
 
-1. 在 Cloudflare Dashboard，选择 **Workers & Pages**
-2. 点击 **Create** → **Worker**
-3. 命名为 `nbaseer-worker`
-4. 将 `worker/index.ts` 的代码复制粘贴进去
-5. 点击 **Deploy**
-6. 进入 Worker 设置：
-   - **Settings** → **Variables** → **D1 Database Bindings**
-   - 添加绑定：Variable name = `DB`，选择 `nbaseer-db`
-7. **Settings** → **Triggers** → **Cron Triggers**
-   - 添加：`*/30 * * * *`（每30分钟执行）
-8. 如果有 Odds API Key：
-   - **Settings** → **Variables** → **Environment Variables**
-   - 添加：`ODDS_API_KEY` = 你的 API Key
+> **历史教训**：`ODDS_API_KEY` 这个 secret 之前被 workflow 无条件传给 `wrangler secret put`，未配置时传入空值导致部署失败，连续 6 次没人发现，数据管道停了半年。现在 workflow 会先判断该 secret 是否非空，为空则跳过这一步。
 
----
+首次也可手动部署：
 
-## 完成！
+```bash
+cd worker
+npx wrangler deploy
+```
 
-访问你的网站：https://nbaseer.pages.dev/
+### 5. 绑定 D1 到 Worker
 
-- 如果数据库为空，页面会显示演示数据（带"演示数据"标签）
-- Worker 部署后会每 30 分钟自动获取真实数据
-- 也可以手动访问 `https://nbaseer-worker.你的账号.workers.dev/update` 触发更新
+Worker → **Settings** → **Bindings** → 添加 D1 绑定：变量名 `DB`，选择 `nbaseer-db`。
+
+`wrangler.toml` 里已声明该绑定，用 wrangler 部署会自动配置；仅在 Dashboard 手动创建 Worker 时需要手工加。
+
+### 6. 部署 Pages
+
+Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**，选择 `guangtoutong/nbaseer`：
+
+- Framework preset: **Next.js**
+- Build command: `npx @cloudflare/next-on-pages`
+- Build output directory: `.vercel/output/static`
+
+部署完成后 → **Settings** → **Functions** → **D1 database bindings** → 添加：变量名 `DB`，选择 `nbaseer-db`，然后重新部署一次。
 
 ---
 
-## 故障排查
+## 二、部署后自检
 
-### 页面显示 500 错误
-- 检查 D1 绑定是否正确配置
-- 确保重新部署了 Pages
+```bash
+# 1. Worker 活着，且看得到 D1
+curl https://nbaseer-worker.<你的子域>.workers.dev/health
 
-### 一直显示演示数据
-- Worker 是否成功部署
-- D1 绑定是否正确
-- 在 D1 Console 执行 `SELECT * FROM games LIMIT 5` 检查数据
+# 期望：teamRatings 为 30，hasOddsKey 反映你是否配置了 key
+```
 
-### Worker 没有获取数据
-- 检查 Cron Trigger 是否配置
-- 查看 Worker 的 Logs 页面
+```bash
+# 2. 手动触发一次完整同步
+curl "https://nbaseer-worker.<你的子域>.workers.dev/sync?force=1"
+
+# 期望：datesFetched 有 5 个日期，errors 为空数组
+# 若 errors 里有 "ESPN ...: HTTP 403"，见下方故障排查
+```
+
+```bash
+# 3. 站点 API 能读到数据
+curl https://nbaseer.pages.dev/api/today
+curl https://nbaseer.pages.dev/api/teams?stats=true
+```
+
+赛季期间，打开 https://nbaseer.pages.dev/ 应能看到当日比赛，且每场的胜率各不相同。**如果所有比赛都显示 50%，说明第 3 步的评分种子没写进去。**
+
+---
+
+## 三、日常运维
+
+### Worker 端点
+
+| 端点 | 用途 |
+|---|---|
+| `/health` | 绑定状态、最近同步时间、剩余赔率额度、各状态比赛数 |
+| `/sync` | 手动触发同步（遵守赔率与预测的频率限制） |
+| `/sync?force=1` | 强制同步，忽略频率限制 |
+| `/debug/espn?date=YYYY-MM-DD` | 直接返回 ESPN 的原始响应，用于区分「上游拒绝」和「解析出错」 |
+
+### 赔率额度
+
+The Odds API 免费档每月 500 credits。一次请求 = 市场数 × 区域数 = `h2h,spreads,totals` × `us` = **3 credits**。
+
+Worker 限制为每 6 小时取一次 = 4 次/天 × 3 = 12 credits/天 ≈ **372/月**，留有余量。
+
+`/health` 的 `oddsCreditsRemaining` 字段显示上游返回的剩余额度。
+
+> 改动 `ODDS_MIN_INTERVAL_MS` 前先算一遍月消耗。之前每 30 分钟取一次 = 4,320 credits/月，是免费额度的 8.6 倍，开赛几天就会耗尽。
+
+### 赛季交接
+
+新赛季开始前，重新生成评分种子并写入：
+
+```bash
+node scripts/backfill.mjs <上赛季开始日> <上赛季结束日>
+cd worker && npx wrangler d1 execute nbaseer-db --remote --file=../db/seed-ratings.sql
+```
+
+脚本同时会更新 `src/lib/backtest.ts`，站点上展示的回测数字随之刷新，推送后自动生效。
+
+---
+
+## 四、本地开发
+
+```bash
+# 建本地库
+cd worker
+npx wrangler d1 execute nbaseer-db --local --file=../db/schema.sql
+npx wrangler d1 execute nbaseer-db --local --file=../db/seed-ratings.sql
+
+# 跑站点（自动连上同一个本地 D1）
+cd ..
+npm run dev
+```
+
+Worker 本地调试：
+
+```bash
+cd worker
+npx wrangler dev --local
+```
+
+**注意**：ESPN 在 Akamai 后面，会以 TLS 指纹拒绝本地 workerd 运行时（返回 403 Access Denied），而部署到 Cloudflare 后正常。本地要跑通完整链路，用回放代理：
+
+```bash
+# 终端 1：把真实 ESPN 数据代理给 worker（REPLAY_SHIFT_DAYS 可把日期平移到有比赛的那天）
+REPLAY_SHIFT_DAYS=34 node scripts/espn-replay.mjs 8798
+
+# 终端 2
+cd worker
+echo 'ESPN_SCOREBOARD_URL="http://127.0.0.1:8798/scoreboard"' > .dev.vars
+npx wrangler dev --local
+```
+
+### 模型调参
+
+```bash
+node scripts/backfill.mjs 2025-10-21 2026-06-27   # 首次会抓 250 天并缓存
+node scripts/tune.mjs 2025-10-21 2026-06-27        # 单参数扫描
+node scripts/tune.mjs 2025-10-21 2026-06-27 --grid # 联合网格
+```
+
+回测样本约 1,200 场，胜负命中率的标准误约 1.4 个百分点——**0.5 个百分点以内的差异是噪声，不要照着最大值调参**。
+
+---
+
+## 五、故障排查
+
+### 数据不更新
+
+按顺序查：
+
+1. **GitHub Actions 是否成功** — `gh run list --limit 5`。这是上次故障的根因：部署连续失败半年无人察觉。
+2. **cron 是否在跑** — Worker → Logs，或看 `/health` 的 `lastSync`。
+3. **`scheduled` 处理器是否存在** — 部署的版本必须导出 `scheduled`。只有 `fetch` 的话 cron 会静默空转。
+4. **手动触发** — `curl ".../sync?force=1"`，看 `errors` 数组。
+
+### 所有预测都是 50% / 220 分
+
+评分表是空的。执行第 3 步写入 `db/seed-ratings.sql`，再 `/sync?force=1`。
+
+### 某些球队的比赛缺失
+
+ESPN 对 6 支球队用了不同缩写：`GS`/`NO`/`NY`/`SA`/`UTAH`/`WSH`。`worker/model.mjs` 的 `ESPN_ABBR_ALIAS` 负责映射。如果 ESPN 再改动缩写，会导致对应球队的比赛被静默丢弃——用 `/debug/espn` 对比原始响应里的 `abbreviation` 字段。
+
+### 历史页显示「本赛季还没有已结算的预测」
+
+正常现象，直到第一场有预测的比赛打完。要有记录，需要满足：比赛 `status='final'`、有比分、且 `predictions` 里有对应行。
+
+### 有比赛一直卡在「进行中」
+
+Worker 每次运行会回收超过 1 天仍为 `live`/`scheduled` 的旧比赛（`reconcileStranded`），每次最多处理 8 个日期。积压较多时跑几次即可清空。
+
+### ESPN 返回 403
+
+- 本地 workerd：预期行为，见上文回放代理。
+- 生产环境：通常是短时限流。回测脚本若一次性猛拉会触发，脚本已内置节流与退避。

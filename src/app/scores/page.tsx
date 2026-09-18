@@ -37,14 +37,6 @@ const content = {
   },
 };
 
-// Mock data for fallback
-const mockGames: Game[] = [
-  { id: 1, date: "2024-03-27", time: "08:42", status: "live", period: 4, home_team_id: 14, away_team_id: 10, home_score: 104, away_score: 101, season: 2024, postseason: 0, home_abbr: "LAL", away_abbr: "GSW", home_team: "Lakers", away_team: "Warriors", home_team_cn: "湖人", away_team_cn: "勇士" },
-  { id: 2, date: "2024-03-27", time: "03:15", status: "live", period: 3, home_team_id: 2, away_team_id: 17, home_score: 76, away_score: 82, season: 2024, postseason: 0, home_abbr: "BOS", away_abbr: "MIL", home_team: "Celtics", away_team: "Bucks", home_team_cn: "凯尔特人", away_team_cn: "雄鹿" },
-  { id: 3, date: "2024-03-27", time: "07:30 PM", status: "scheduled", period: 0, home_team_id: 24, away_team_id: 8, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "PHX", away_abbr: "DEN", home_team: "Suns", away_team: "Nuggets", home_team_cn: "太阳", away_team_cn: "掘金" },
-  { id: 4, date: "2024-03-27", time: "09:00 PM", status: "scheduled", period: 0, home_team_id: 16, away_team_id: 23, home_score: 0, away_score: 0, season: 2024, postseason: 0, home_abbr: "MIA", away_abbr: "PHI", home_team: "Heat", away_team: "76ers", home_team_cn: "热火", away_team_cn: "76人" },
-];
-
 function GameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
   const t = content[locale];
   const isLive = game.status === "live";
@@ -137,33 +129,28 @@ export default function ScoresPage() {
   const [selectedDate, setSelectedDate] = useState(dates[1]);
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [useMockData, setUseMockData] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchGames() {
       setIsLoading(true);
       try {
         const response = await fetch(`/api/games?date=${selectedDate}&limit=50`);
         if (!response.ok) throw new Error('API error');
         const data = await response.json() as { games: Game[] };
-
-        if (data.games && data.games.length > 0) {
-          setGames(data.games);
-          setUseMockData(false);
-        } else {
-          setGames(mockGames);
-          setUseMockData(true);
-        }
+        if (!cancelled) setGames(data.games || []);
       } catch (error) {
+        // An empty schedule is a legitimate answer; placeholder fixtures are not.
         console.error('Failed to fetch games:', error);
-        setGames(mockGames);
-        setUseMockData(true);
+        if (!cancelled) setGames([]);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
 
     fetchGames();
+    return () => { cancelled = true; };
   }, [selectedDate]);
 
   const liveGames = games.filter(g => g.status === "live");
@@ -171,7 +158,7 @@ export default function ScoresPage() {
   const finalGames = games.filter(g => g.status === "final");
 
   return (
-    <div className="pt-28 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto space-y-8">
+    <div className="pt-8 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto space-y-8">
       {/* Page Header */}
       <div className="space-y-4">
         <h1 className="text-4xl font-black">

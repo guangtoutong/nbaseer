@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useLocale } from "@/lib/LocaleContext";
 
 const navLinksZh = [
@@ -22,6 +23,10 @@ export function Navbar() {
   const pathname = usePathname();
   const { locale, setLocale } = useLocale();
   const navLinks = locale === 'zh' ? navLinksZh : navLinksEn;
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the drawer on navigation, otherwise it stays open over the new page.
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   return (
     <header className="fixed top-0 w-full z-50 bg-slate-950/90 backdrop-blur-xl shadow-2xl shadow-black/50 border-b border-white/5">
@@ -63,14 +68,46 @@ export function Navbar() {
 
           {/* Mobile menu */}
           <div className="md:hidden">
-            <button className="text-slate-400 hover:text-primary transition-all duration-200">
+            <button
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
+              aria-label={locale === 'zh' ? '菜单' : 'Menu'}
+              className="text-slate-400 hover:text-primary transition-all duration-200"
+            >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {menuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
           </div>
         </div>
       </div>
+
+      {menuOpen && (
+        <nav
+          id="mobile-nav"
+          className="md:hidden border-t border-white/5 bg-slate-950/95 backdrop-blur-xl"
+        >
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`block px-8 py-4 font-medium border-b border-white/5 transition-colors ${
+                  isActive ? "text-primary font-bold" : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </header>
   );
 }

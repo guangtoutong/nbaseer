@@ -4,13 +4,28 @@ import Link from "next/link";
 import { useGamesContext } from "@/lib/GamesContext";
 import { useLocale } from "@/lib/LocaleContext";
 import { getTimeDisplay } from "@/lib/timeUtils";
+import { explainPrediction } from "@/lib/explain";
 import type { Game } from "@/lib/types";
+
+/** American odds print with an explicit sign; a missing line prints as a dash. */
+function fmtMl(v?: number | null) {
+  if (v == null) return "-";
+  return v > 0 ? `+${Math.round(v)}` : String(Math.round(v));
+}
+
+function fmtPoint(v?: number | null) {
+  if (v == null) return "-";
+  return v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1);
+}
+
+function hasMarketOdds(game: Game) {
+  return Boolean(game.odds_book);
+}
 
 const content = {
   zh: {
     upcoming: "即将开始",
     aiCenter: "AI 预测中心",
-    demoData: "(演示数据)",
     noGames: "暂无即将开始的比赛",
     hotPick: "热门预测",
     confidence: "置信度",
@@ -19,24 +34,21 @@ const content = {
     predictedScore: "预测比分",
     predictedSpread: "预测分差",
     predictedTotal: "预测总分",
-    referenceOdds: "参考赔率",
-    marketData: "市场实时数据",
+    referenceOdds: "博彩盘口",
+    noOdds: "暂无盘口数据",
     moneyline: "独赢 (ML)",
     spread: "让分 (Spread)",
-    total: "总分 (Total)",
+    total: "大小分 (O/U)",
     viewDetails: "查看详情",
     starting: "即将开始",
-    aiAnalysis: "AI 深度分析",
-    homeAdvantage: "主场作战，主场优势明显，近期状态稳定。",
-    awayChallenge: "客场挑战，需关注关键球员状态及防守表现。",
-    aiWinProb: "AI 预测胜率",
+    aiAnalysis: "预测依据",
+    modelWinProb: "模型预测胜率",
     home: "主",
     away: "客",
   },
   en: {
     upcoming: "Upcoming",
     aiCenter: "AI Prediction Center",
-    demoData: "(Demo Data)",
     noGames: "No upcoming games",
     hotPick: "HOT PICK",
     confidence: "Confidence",
@@ -45,17 +57,15 @@ const content = {
     predictedScore: "Pred. Score",
     predictedSpread: "Pred. Spread",
     predictedTotal: "Pred. Total",
-    referenceOdds: "Reference Odds",
-    marketData: "Live Market Data",
+    referenceOdds: "Bookmaker Line",
+    noOdds: "No odds available",
     moneyline: "Moneyline (ML)",
     spread: "Spread",
     total: "Total (O/U)",
     viewDetails: "View Details",
     starting: "Starting Soon",
-    aiAnalysis: "AI Deep Analysis",
-    homeAdvantage: "Playing at home with clear home-court advantage and stable recent form.",
-    awayChallenge: "Away challenge - watch key player status and defensive performance.",
-    aiWinProb: "AI Win Probability",
+    aiAnalysis: "Why this number",
+    modelWinProb: "Model win probability",
     home: "Home",
     away: "Away",
   },
@@ -71,6 +81,7 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
   const predictedHomeScore = game.predicted_home_score || Math.round((total - spread) / 2);
   const predictedAwayScore = game.predicted_away_score || Math.round((total + spread) / 2);
   const timeDisplay = getTimeDisplay(game.date, game.time, locale);
+  const hasOdds = hasMarketOdds(game);
 
   // Get team names based on locale
   const homeTeamName = locale === 'zh' ? (game.home_team_cn || game.home_team) : (game.home_team || game.home_team_cn);
@@ -141,22 +152,26 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
               </svg>
               {t.referenceOdds}
             </span>
-            <span className="text-[10px] text-slate-400 italic">{t.marketData}</span>
+            {hasOdds && <span className="text-[10px] text-slate-400 italic">{game.odds_book}</span>}
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-[#1b2028]/40 p-2 rounded border border-white/5">
-              <div className="text-[9px] text-slate-400 uppercase mb-1">{t.moneyline}</div>
-              <div className="text-xs font-bold">1.{Math.round(100/homeWinProb * 100 - 100)} / 1.{Math.round(100/awayWinProb * 100 - 100)}</div>
+          {hasOdds ? (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-[#1b2028]/40 p-2 rounded border border-white/5">
+                <div className="text-[9px] text-slate-400 uppercase mb-1">{t.moneyline}</div>
+                <div className="text-xs font-bold">{fmtMl(game.home_ml)} / {fmtMl(game.away_ml)}</div>
+              </div>
+              <div className="bg-[#1b2028]/40 p-2 rounded border border-white/5">
+                <div className="text-[9px] text-slate-400 uppercase mb-1">{t.spread}</div>
+                <div className="text-xs font-bold">{fmtPoint(game.spread_home)}</div>
+              </div>
+              <div className="bg-[#1b2028]/40 p-2 rounded border border-white/5">
+                <div className="text-[9px] text-slate-400 uppercase mb-1">{t.total}</div>
+                <div className="text-xs font-bold">{game.total_over?.toFixed(1) ?? '-'}</div>
+              </div>
             </div>
-            <div className="bg-[#1b2028]/40 p-2 rounded border border-white/5">
-              <div className="text-[9px] text-slate-400 uppercase mb-1">{t.spread}</div>
-              <div className="text-xs font-bold">{game.predicted_spread?.toFixed(1) || '-'} @1.90</div>
-            </div>
-            <div className="bg-[#1b2028]/40 p-2 rounded border border-white/5">
-              <div className="text-[9px] text-slate-400 uppercase mb-1">{t.total}</div>
-              <div className="text-xs font-bold">{game.predicted_total?.toFixed(1) || '-'} @1.90</div>
-            </div>
-          </div>
+          ) : (
+            <p className="text-xs text-slate-500">{t.noOdds}</p>
+          )}
         </div>
 
         {/* View Details Link */}
@@ -174,15 +189,12 @@ function FeaturedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" })
           <h3 className="font-black text-lg uppercase tracking-tight">{t.aiAnalysis}</h3>
         </div>
         <div className="space-y-4">
-          <p className="text-sm font-medium leading-relaxed">
-            {homeTeamName} {t.homeAdvantage}
-          </p>
-          <p className="text-sm font-medium leading-relaxed">
-            {awayTeamName} {t.awayChallenge}
-          </p>
+          {explainPrediction(game, locale).map((line, i) => (
+            <p key={i} className="text-sm font-medium leading-relaxed">{line}</p>
+          ))}
           <div className="pt-4 mt-4 border-t border-white/20">
             <div className="flex justify-between text-xs mb-1">
-              <span>{t.aiWinProb}</span>
+              <span>{t.modelWinProb}</span>
               <span>{homeTeamName} {homeWinProb.toFixed(0)}%</span>
             </div>
             <div className="w-full h-1 bg-black/20 rounded-full overflow-hidden">
@@ -264,29 +276,34 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
         </div>
       </div>
 
-      {/* Small Card Odds */}
-      <div className="mt-auto pt-4 border-t border-white/10">
-        <div className="text-[10px] font-bold text-slate-400 mb-2 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {t.referenceOdds}
+      {/* Bookmaker line — rendered only when odds were actually fetched. */}
+      {hasMarketOdds(game) && (
+        <div className="mt-auto pt-4 border-t border-white/10">
+          <div className="text-[10px] font-bold text-slate-400 mb-2 flex items-center justify-between gap-1">
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {t.referenceOdds}
+            </span>
+            <span className="font-normal opacity-60">{game.odds_book}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            <div className="text-[10px] bg-[#151a21]/50 px-2 py-1.5 rounded flex justify-between">
+              <span className="opacity-50">{t.moneyline}</span>
+              <span className="font-bold">{fmtMl(game.home_ml)} / {fmtMl(game.away_ml)}</span>
+            </div>
+            <div className="text-[10px] bg-[#151a21]/50 px-2 py-1.5 rounded flex justify-between">
+              <span className="opacity-50">{t.spread}</span>
+              <span className="font-bold">{fmtPoint(game.spread_home)}</span>
+            </div>
+            <div className="text-[10px] bg-[#151a21]/50 px-2 py-1.5 rounded flex justify-between">
+              <span className="opacity-50">{t.total}</span>
+              <span className="font-bold">{game.total_over?.toFixed(1) ?? '-'}</span>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-2">
-          <div className="text-[10px] bg-[#151a21]/50 px-2 py-1.5 rounded flex justify-between">
-            <span className="opacity-50">{t.moneyline}</span>
-            <span className="font-bold">1.{Math.round(100/homeWinProb * 100 - 100)} / 1.{Math.round(100/awayWinProb * 100 - 100)}</span>
-          </div>
-          <div className="text-[10px] bg-[#151a21]/50 px-2 py-1.5 rounded flex justify-between">
-            <span className="opacity-50">{t.spread}</span>
-            <span className="font-bold">{game.predicted_spread?.toFixed(1) || '-'} @1.91</span>
-          </div>
-          <div className="text-[10px] bg-[#151a21]/50 px-2 py-1.5 rounded flex justify-between">
-            <span className="opacity-50">{t.total}</span>
-            <span className="font-bold">{game.predicted_total?.toFixed(1) || '-'} @1.90</span>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* View Details Link */}
       <Link href={`/game/${game.id}`} className="mt-4 w-full py-2 text-xs font-bold text-slate-400 hover:text-primary border border-white/5 rounded-lg hover:border-primary/30 transition-all block text-center">
@@ -297,7 +314,7 @@ function SmallGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
 }
 
 export function UpcomingGames() {
-  const { scheduled, isLoading, useMockData } = useGamesContext();
+  const { scheduled, isLoading } = useGamesContext();
   const { locale } = useLocale();
   const t = content[locale];
 
@@ -338,7 +355,6 @@ export function UpcomingGames() {
       <h2 className="text-2xl font-black flex items-center gap-3">
         <span className="w-2 h-8 bg-primary rounded-full"></span>
         {t.upcoming} <span className="text-primary text-sm font-medium tracking-normal">{t.aiCenter}</span>
-        {useMockData && <span className="text-xs text-yellow-500 ml-2">{t.demoData}</span>}
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

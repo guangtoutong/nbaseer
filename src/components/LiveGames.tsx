@@ -97,7 +97,7 @@ function LiveGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }) {
 }
 
 export function LiveGames() {
-  const { live, isLoading, useMockData } = useGamesContext();
+  const { live, isLoading } = useGamesContext();
   const { locale } = useLocale();
   const t = content[locale];
 

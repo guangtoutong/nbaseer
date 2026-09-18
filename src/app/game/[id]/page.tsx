@@ -110,7 +110,7 @@ export default function GameDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="pt-28 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
+      <div className="pt-8 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
         <div className="animate-pulse space-y-8">
           <div className="h-8 bg-slate-800 rounded w-48" />
           <div className="h-64 bg-slate-800 rounded-xl" />
@@ -125,7 +125,7 @@ export default function GameDetailPage() {
 
   if (error || !game) {
     return (
-      <div className="pt-28 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
+      <div className="pt-8 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
         <div className="text-center py-20">
           <h1 className="text-2xl font-bold mb-4">
             {error || t.gameNotFound}
@@ -150,7 +150,7 @@ export default function GameDetailPage() {
   const gameTimeDisplay = getTimeDisplay(game.date, game.time, locale);
 
   return (
-    <div className="pt-28 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto space-y-8">
+    <div className="pt-8 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto space-y-8">
       {/* Back Link */}
       <Link href="/scores" className="inline-flex items-center gap-2 text-slate-400 hover:text-primary transition-colors">
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

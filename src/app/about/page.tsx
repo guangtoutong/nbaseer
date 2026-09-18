@@ -1,77 +1,94 @@
 "use client";
 
 import { useLocale } from "@/lib/LocaleContext";
+import { BACKTEST } from "@/lib/backtest";
 
 const content = {
   zh: {
     title: "关于",
     brand: "nbaseer",
-    subtitle: "nbaseer 是一个基于深度学习的 NBA 比赛预测平台，利用先进的 AI 技术分析海量数据，为用户提供高准确率的比赛预测和实时分析。",
-    features: "核心功能",
-    feature1Title: "智能预测",
-    feature1Desc: "基于深度神经网络分析球队历史数据、球员表现、伤病情况等50+关键变量，提供胜负、分差、总分预测。",
-    feature2Title: "实时更新",
-    feature2Desc: "毫秒级数据同步，实时追踪比赛进程、市场赔率变化，动态调整预测概率，确保信息时效性。",
-    feature3Title: "高准确率",
-    feature3Desc: "历史预测准确率达到67.8%，远超市场平均水平。所有预测记录透明可查，支持历史数据回溯。",
-    tech: "技术架构",
-    dataProcessing: "数据处理",
+    subtitle:
+      "nbaseer 用一个公开的 Elo 评分模型预测 NBA 比赛，给出胜负概率、分差和总分。模型不复杂，但每一个数字都可以复现——包括它算错的那些。",
+    features: "这个站做什么",
+    feature1Title: "评分模型",
+    feature1Desc:
+      "每支球队维护一个 Elo 评分，按比赛的净胜分更新。预测时叠加主场优势和背靠背因素，换算成胜率与分差。",
+    feature2Title: "自动同步",
+    feature2Desc:
+      "赛程与比分每 10 分钟从 ESPN 拉取一次。预测在赛前写入数据库，赛后按最终比分自动结算，不作事后修改。",
+    feature3Title: "公开回测",
+    feature3Desc:
+      "上赛季 1,172 场比赛的滚动回测结果公开在下方和历史页。每条预测都由「该场比赛之前」的评分生成，不使用任何赛后信息。",
+    tech: "实现细节",
+    dataProcessing: "数据",
     dataPoints: [
-      "每秒分析超过 120 万个数据点",
-      "集成 NBA 官方 API 实时数据",
-      "历史数据回溯至 2010 赛季",
-      "多源赔率数据聚合分析",
+      "赛程与比分：ESPN 公开接口，每 10 分钟同步",
+      "博彩赔率：The Odds API，每 6 小时取一次多家均值",
+      "评分种子：2025-26 赛季全部 1,322 场比赛回放得出",
+      "存储与运行：Cloudflare D1 + Workers，代码开源可查",
     ],
-    aiModel: "AI 模型",
+    aiModel: "模型",
     modelPoints: [
-      "深度神经网络 (DNN) 架构",
-      "XGBoost 集成学习增强",
-      "每日自动模型迭代优化",
-      "贝叶斯概率校准",
+      "Elo 评分，按净胜分缩放更新幅度（FiveThirtyEight 方案）",
+      "主场优势约 2.5 分，背靠背约 1 分",
+      "总分由双方进攻/防守得分率估算，赛季初向联盟均值回归",
+      "有赔率时与盘口各取一半做校准，无赔率时模型独立出数",
     ],
-    stats: "平台数据",
-    accuracy: "预测准确率",
-    totalPredictions: "累计预测场次",
-    avgROI: "平均 ROI",
-    dataPerSecond: "每秒数据点",
+    stats: "回测结果",
+    statsNote:
+      "以下数字来自对 2025-26 赛季的滚动回测：按时间顺序逐场预测，预测完成后才把该场结果并入评分。前 150 场为评分预热期，不计入统计。",
+    accuracy: "胜负命中率",
+    totalPredictions: "回测场次",
+    spreadMae: "平均分差误差",
+    brierScore: "Brier 分数",
+    brierNote: "0.25 = 抛硬币",
     disclaimer: "免责声明",
-    disclaimerText: "nbaseer 提供的所有预测和分析仅供参考，不构成任何投资建议。体育比赛结果具有不确定性，过往表现不代表未来结果。请用户理性对待预测数据，自行承担决策风险。",
+    disclaimerText:
+      "nbaseer 的预测是统计模型的输出，仅供参考，不构成任何投注或投资建议。模型会出错且经常出错，过往命中率不代表未来表现。请自行判断并承担决策风险。",
     contact: "联系我们",
     contactText: "如有问题或建议，请发送邮件至",
   },
   en: {
     title: "About",
     brand: "nbaseer",
-    subtitle: "nbaseer is a deep learning-based NBA game prediction platform that uses advanced AI technology to analyze massive amounts of data, providing users with high-accuracy game predictions and real-time analysis.",
-    features: "Core Features",
-    feature1Title: "Smart Predictions",
-    feature1Desc: "Using deep neural networks to analyze team history, player performance, injuries, and 50+ key variables to provide win/loss, spread, and total predictions.",
-    feature2Title: "Real-Time Updates",
-    feature2Desc: "Millisecond-level data sync, real-time tracking of game progress and odds changes, dynamically adjusting prediction probabilities for timely information.",
-    feature3Title: "High Accuracy",
-    feature3Desc: "Historical prediction accuracy of 67.8%, far exceeding market averages. All prediction records are transparent and traceable with historical data support.",
-    tech: "Technology",
-    dataProcessing: "Data Processing",
+    subtitle:
+      "nbaseer predicts NBA games with a published Elo rating model: win probability, spread and total. The model is not clever, but every number it produces can be reproduced — including the ones it gets wrong.",
+    features: "What this site does",
+    feature1Title: "Rating model",
+    feature1Desc:
+      "Each team carries an Elo rating updated by margin of victory. Predictions add home court and back-to-back adjustments, then convert the rating gap into a win probability and a spread.",
+    feature2Title: "Automatic sync",
+    feature2Desc:
+      "Schedules and scores refresh from ESPN every 10 minutes. Predictions are written before tip-off and settled against the final score afterwards, never adjusted in hindsight.",
+    feature3Title: "Published backtest",
+    feature3Desc:
+      "A walk-forward backtest over 1,172 games from last season is shown below and on the history page. Every prediction came from ratings as they stood before that game, using no post-game information.",
+    tech: "Implementation",
+    dataProcessing: "Data",
     dataPoints: [
-      "Analyzing over 1.2 million data points per second",
-      "Integrated with official NBA API for real-time data",
-      "Historical data dating back to the 2010 season",
-      "Multi-source odds data aggregation and analysis",
+      "Schedules and scores: ESPN public API, synced every 10 minutes",
+      "Bookmaker odds: The Odds API, averaged across books every 6 hours",
+      "Rating seeds: replayed from all 1,322 games of the 2025-26 season",
+      "Storage and runtime: Cloudflare D1 + Workers, code open to inspection",
     ],
-    aiModel: "AI Model",
+    aiModel: "Model",
     modelPoints: [
-      "Deep Neural Network (DNN) Architecture",
-      "XGBoost Ensemble Learning Enhancement",
-      "Daily automatic model iteration optimization",
-      "Bayesian probability calibration",
+      "Elo with margin-of-victory scaling (the FiveThirtyEight formulation)",
+      "Home court worth roughly 2.5 points, back-to-back about 1 point",
+      "Totals estimated from both teams' scoring rates, regressed to league average early in the season",
+      "When odds exist the model is blended 50/50 with the market; otherwise it stands alone",
     ],
-    stats: "Platform Statistics",
-    accuracy: "Prediction Accuracy",
-    totalPredictions: "Total Predictions",
-    avgROI: "Average ROI",
-    dataPerSecond: "Data Points/Sec",
+    stats: "Backtest results",
+    statsNote:
+      "These come from a walk-forward backtest of the 2025-26 season: games are predicted in chronological order, and each result is folded into the ratings only after its prediction was made. The first 150 games are a warm-up period and are excluded.",
+    accuracy: "Winner accuracy",
+    totalPredictions: "Games backtested",
+    spreadMae: "Avg spread error",
+    brierScore: "Brier score",
+    brierNote: "0.25 = coin flip",
     disclaimer: "Disclaimer",
-    disclaimerText: "All predictions and analysis provided by nbaseer are for reference only and do not constitute investment advice. Sports outcomes are uncertain, and past performance does not guarantee future results. Please treat prediction data rationally and bear decision-making risks yourself.",
+    disclaimerText:
+      "nbaseer's predictions are statistical model output, provided for reference only. They are not betting or investment advice. The model is wrong regularly, and past accuracy does not predict future accuracy. Judge for yourself and carry your own risk.",
     contact: "Contact Us",
     contactText: "For questions or suggestions, please email",
   },
@@ -82,7 +99,7 @@ export default function AboutPage() {
   const t = content[locale];
 
   return (
-    <div className="pt-28 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto space-y-16">
+    <div className="pt-8 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto space-y-16">
       {/* Hero Section */}
       <section className="relative overflow-hidden rounded-xl bg-[#0f141a] p-8 md:p-16 border border-white/5">
         <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
@@ -175,22 +192,34 @@ export default function AboutPage() {
           <span className="w-2 h-8 bg-green-500 rounded-full" />
           {t.stats}
         </h2>
+        <p className="text-slate-400 leading-relaxed max-w-3xl">{t.statsNote}</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl text-center">
-            <div className="text-4xl font-black text-primary mb-2">67.8%</div>
+            <div className="text-4xl font-black text-primary mb-2">
+              {BACKTEST.winner_accuracy}%
+            </div>
             <div className="text-sm text-slate-400">{t.accuracy}</div>
           </div>
           <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl text-center">
-            <div className="text-4xl font-black mb-2">12,847</div>
+            <div className="text-4xl font-black mb-2">
+              {BACKTEST.games_evaluated.toLocaleString()}
+            </div>
             <div className="text-sm text-slate-400">{t.totalPredictions}</div>
           </div>
           <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl text-center">
-            <div className="text-4xl font-black text-green-500 mb-2">+8.2%</div>
-            <div className="text-sm text-slate-400">{t.avgROI}</div>
+            <div className="text-4xl font-black text-blue-400 mb-2">
+              {BACKTEST.spread_mae}
+            </div>
+            <div className="text-sm text-slate-400">{t.spreadMae}</div>
           </div>
           <div className="bg-[#0f141a] border border-white/5 p-6 rounded-xl text-center">
-            <div className="text-4xl font-black text-blue-400 mb-2">120M+</div>
-            <div className="text-sm text-slate-400">{t.dataPerSecond}</div>
+            <div className="text-4xl font-black text-green-500 mb-2">
+              {BACKTEST.brier_score}
+            </div>
+            <div className="text-sm text-slate-400">
+              {t.brierScore}
+              <span className="block text-xs text-slate-600">{t.brierNote}</span>
+            </div>
           </div>
         </div>
       </section>

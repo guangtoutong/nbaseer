@@ -9,7 +9,11 @@
     "lint": "next lint",
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:dev": "npx wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
-    "pages:deploy": "npm run pages:build && npx wrangler pages deploy .vercel/output/static"
+    "pages:deploy": "npm run pages:build && npx wrangler pages deploy .vercel/output/static",
+    "backfill": "node scripts/backfill.mjs",
+    "tune": "node scripts/tune.mjs",
+    "espn-replay": "node scripts/espn-replay.mjs",
+    "worker:dev": "wrangler dev --local --config worker/wrangler.toml"
   },
   "dependencies": {
     "next": "15.1.0",

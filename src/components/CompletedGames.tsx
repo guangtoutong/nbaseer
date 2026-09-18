@@ -94,7 +94,7 @@ function CompletedGameCard({ game, locale }: { game: Game; locale: "zh" | "en" }
 }
 
 export function CompletedGames() {
-  const { completed, isLoading, useMockData } = useGamesContext();
+  const { completed, isLoading } = useGamesContext();
   const { locale } = useLocale();
   const t = content[locale];
 

@@ -46,37 +46,39 @@ export function Footer() {
         <div className="text-lg font-bold text-slate-200">nbaseer</div>
 
         {/* Copyright & Sync Time */}
-        <p className="text-sm tracking-wide text-slate-500">
-          © 2024 nbaseer. {t.copyright}. {t.syncTime}: {currentTime}
+        <p className="text-sm tracking-wide text-slate-500 text-center">
+          © {new Date().getFullYear()} nbaseer. {t.copyright}.
+          {currentTime && ` ${t.syncTime}: ${currentTime}`}
         </p>
 
-        {/* Recommended */}
-        <div className="flex items-center gap-2">
+        {/* Recommended — the descriptions are dropped below `lg` so the pills stay
+            on one line instead of collapsing into unreadable blobs on a phone. */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <span className="text-xs text-slate-600">{t.recommended}:</span>
           <a
             href="https://solomd.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap"
           >
             <span>📝</span>
             <span>SoloMD</span>
-            <span className="text-slate-600">- {t.solomdDesc}</span>
+            <span className="hidden lg:inline text-slate-600">- {t.solomdDesc}</span>
           </a>
           <a
             href="https://storyalter.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all"
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 rounded-full text-xs text-slate-400 hover:text-slate-200 transition-all whitespace-nowrap"
           >
             <span>📖</span>
             <span>StoryAlter</span>
-            <span className="text-slate-600">- {t.storyalterDesc}</span>
+            <span className="hidden lg:inline text-slate-600">- {t.storyalterDesc}</span>
           </a>
         </div>
 
         {/* Links */}
-        <div className="flex gap-8">
+        <div className="flex flex-wrap justify-center gap-6 md:gap-8">
           <Link
             href="/terms"
             className="text-slate-500 hover:text-primary underline underline-offset-4 transition-all"

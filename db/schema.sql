@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS games (
   postseason INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  -- Set to 1 once this game has been folded into the Elo ratings, so repeated
+  -- cron runs cannot count the same result twice.
+  rating_applied INTEGER DEFAULT 0,
   FOREIGN KEY (home_team_id) REFERENCES teams(id),
   FOREIGN KEY (away_team_id) REFERENCES teams(id)
 );
@@ -42,6 +45,8 @@ CREATE TABLE IF NOT EXISTS predictions (
   predicted_total REAL,
   confidence REAL,
   analysis TEXT,
+  -- Which model produced this, e.g. "elo-mov-1.1/model" or ".../model+market".
+  model_version TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (game_id) REFERENCES games(id)
 );
@@ -103,8 +108,31 @@ CREATE TABLE IF NOT EXISTS prediction_results (
   FOREIGN KEY (game_id) REFERENCES games(id)
 );
 
+-- Elo ratings, one row per team per season. Seeded by scripts/backfill.mjs and
+-- maintained by the worker after every finished game.
+CREATE TABLE IF NOT EXISTS team_ratings (
+  team_id INTEGER NOT NULL,
+  season INTEGER NOT NULL,
+  elo REAL NOT NULL DEFAULT 1500,
+  off_ppg REAL,
+  def_ppg REAL,
+  games_played INTEGER DEFAULT 0,
+  last_game_date TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (team_id, season),
+  FOREIGN KEY (team_id) REFERENCES teams(id)
+);
+
+-- Worker bookkeeping: last sync time, odds quota window, remaining credits.
+CREATE TABLE IF NOT EXISTS meta (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_games_date ON games(date);
+CREATE INDEX IF NOT EXISTS idx_games_status_date ON games(status, date);
 CREATE INDEX IF NOT EXISTS idx_games_status ON games(status);
 CREATE INDEX IF NOT EXISTS idx_predictions_game ON predictions(game_id);
 CREATE INDEX IF NOT EXISTS idx_odds_game ON odds(game_id);

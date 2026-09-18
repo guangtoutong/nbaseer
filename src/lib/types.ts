@@ -57,7 +57,17 @@ export interface Game {
   predicted_spread?: number;
   predicted_total?: number;
   confidence?: number;
+  model_version?: string;
   winner_correct?: number;
+  /** Elo ratings behind the prediction, so the UI can explain rather than assert. */
+  home_elo?: number;
+  away_elo?: number;
+  /** Consensus bookmaker line. Absent whenever no odds were actually fetched. */
+  odds_book?: string | null;
+  home_ml?: number | null;
+  away_ml?: number | null;
+  spread_home?: number | null;
+  total_over?: number | null;
 }
 
 export interface Prediction {
@@ -110,9 +120,25 @@ export interface OverallStats {
   correct_winners: number;
   correct_spreads: number;
   correct_totals: number;
-  winner_accuracy: number;
-  spread_accuracy: number;
-  total_accuracy: number;
+  /** null until at least one prediction has been settled against a final score. */
+  winner_accuracy: number | null;
+  spread_accuracy: number | null;
+  total_accuracy: number | null;
+  /** Mean absolute error in points — the honest measure of prediction quality. */
+  spread_mae: number | null;
+  total_mae: number | null;
+  /** Brier score for the win probabilities; 0.25 is a coin flip, lower is better. */
+  brier_score: number | null;
+}
+
+export interface RecentPrediction {
+  date: string;
+  home_team: string;
+  away_team: string;
+  home_win_prob: number | null;
+  home_score: number;
+  away_score: number;
+  winner_correct: number;
 }
 
 export interface MonthlyStats {
@@ -143,7 +169,7 @@ export interface TeamsResponse {
 export interface StatsResponse {
   overall: OverallStats;
   monthly: MonthlyStats[];
-  recent: any[];
+  recent: RecentPrediction[];
   games: { status: string; count: number }[];
 }
 

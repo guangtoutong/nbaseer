@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { AdBanner } from "@/components/AdBanner";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://nbaseer.pages.dev'),
   title: {
     default: "NBAseer - AI NBA 预测引擎 | NBA比赛预测分析",
     template: "%s | NBAseer"
@@ -51,9 +52,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://nbaseer.pages.dev',
   },
-  verification: {
-    google: 'your-google-verification-code', // 替换为你的Google Search Console验证码
-  },
+  // Add `verification: { google: '<code>' }` here once Search Console issues one.
+  // A placeholder string was previously emitted as a real meta tag.
 };
 
 export default function RootLayout({
@@ -104,6 +104,10 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <LocaleProvider>
           <Navbar />
+          {/* The navbar is fixed; this reserves its height so everything below can
+              live in normal flow. The ad banner used to be fixed too and overlapped
+              the top of every page on narrow screens. */}
+          <div className="h-20 shrink-0" aria-hidden />
           <AdBanner />
           <main className="flex-1">{children}</main>
           <Footer />

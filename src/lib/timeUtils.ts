@@ -1,6 +1,32 @@
 import { Locale } from "./i18n";
 
 /**
+ * Resolve a tipoff instant from what the database holds.
+ *
+ * The worker writes ESPN's ISO timestamp ("2026-10-21T23:00Z"), but a value that
+ * has passed through SQLite's datetime() arrives as "2026-10-21 23:00:00" with no
+ * zone marker. Both denote UTC, so both are normalised here rather than falling
+ * through to a mislabelled raw string.
+ */
+function parseTipoff(dateStr: string, timeStr: string): Date | null {
+  const raw = timeStr.trim();
+
+  if (/\d{4}-\d{2}-\d{2}T/.test(raw)) {
+    // Already ISO; add the zone only when it is genuinely absent.
+    const iso = /[Zz]|[+-]\d{2}:?\d{2}$/.test(raw) ? raw : `${raw}Z`;
+    return new Date(iso);
+  }
+
+  const sqlite = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)$/);
+  if (sqlite) return new Date(`${sqlite[1]}T${sqlite[2]}Z`);
+
+  if (/\d{4}-\d{2}-\d{2}T/.test(dateStr)) return new Date(dateStr);
+
+  const combined = new Date(`${dateStr} ${raw.replace(/\s+/g, " ")}`);
+  return isNaN(combined.getTime()) ? null : combined;
+}
+
+/**
  * Format game time based on locale
  * - Chinese (zh): Shows Beijing time (UTC+8)
  * - English (en): Shows US Eastern time (ET)
@@ -21,22 +47,12 @@ export function formatGameTime(
   }
 
   try {
-    let dateTime: Date;
+    const dateTime = parseTipoff(dateStr, timeStr);
 
-    // Check if timeStr is an ISO string (e.g., "2026-03-29T19:30Z")
-    if (timeStr.includes("T") && timeStr.includes("Z")) {
-      dateTime = new Date(timeStr);
-    } else if (dateStr.includes("T")) {
-      dateTime = new Date(dateStr);
-    } else {
-      // Try to combine date and time
-      const cleanTime = timeStr.replace(/\s+/g, " ").trim();
-      dateTime = new Date(`${dateStr} ${cleanTime}`);
-    }
-
-    // If invalid date, return original
-    if (isNaN(dateTime.getTime())) {
-      return { time: timeStr, date: "", timezone: locale === "zh" ? "美东" : "ET" };
+    // Never label an unparsed string with a timezone — claiming "ET" for a value
+    // we could not interpret is worse than showing it plainly.
+    if (!dateTime || isNaN(dateTime.getTime())) {
+      return { time: timeStr, date: "", timezone: "" };
     }
 
     if (locale === "zh") {
@@ -82,9 +98,9 @@ export function formatGameTime(
         timezone: "ET",
       };
     }
-  } catch (error) {
-    // Fallback: return original time
-    return { time: timeStr, date: "", timezone: locale === "zh" ? "美东" : "ET" };
+  } catch {
+    // Same reasoning as above: show the raw value, claim no timezone for it.
+    return { time: timeStr, date: "", timezone: "" };
   }
 }
 

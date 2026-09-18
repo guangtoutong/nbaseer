@@ -1,265 +1,231 @@
 "use client";
 
+import Link from "next/link";
 import { useLocale } from "@/lib/LocaleContext";
+import { BACKTEST } from "@/lib/backtest";
 
 const content = {
   zh: {
-    badge: "技术白皮书",
-    title: "NBAseer AI 预测引擎",
-    subtitle: "技术白皮书",
-    description: "深入了解我们如何利用机器学习和大数据分析来预测 NBA 比赛结果",
+    badge: "方法说明",
+    title: "nbaseer 预测模型",
+    subtitle: "它怎么算的，算得有多准",
+    description:
+      "这一页写清楚模型用了什么数据、怎么出数、在多少场比赛上验证过，以及它做不到什么。没有营销辞令。",
     toc: "目录",
     tocItems: [
-      { id: "overview", label: "1. 系统概述" },
-      { id: "data", label: "2. 数据来源与处理" },
-      { id: "features", label: "3. 特征工程" },
-      { id: "model", label: "4. 预测模型架构" },
-      { id: "training", label: "5. 模型训练与优化" },
-      { id: "accuracy", label: "6. 准确率与验证" },
-      { id: "realtime", label: "7. 实时预测系统" },
-      { id: "future", label: "8. 未来规划" },
+      { id: "overview", label: "1. 模型是什么" },
+      { id: "data", label: "2. 数据来源" },
+      { id: "elo", label: "3. 评分如何更新" },
+      { id: "predict", label: "4. 从评分到预测" },
+      { id: "market", label: "5. 盘口校准" },
+      { id: "accuracy", label: "6. 回测结果" },
+      { id: "limits", label: "7. 模型的局限" },
     ],
-    section1: {
-      title: "系统概述",
-      text: "NBAseer 是一个基于机器学习的 NBA 比赛预测系统，旨在通过分析历史数据、球队表现、球员状态等多维度信息，为用户提供准确的比赛胜负预测、分差预测和大小分预测。",
-      stat1: "胜负预测准确率",
-      stat2: "分析维度",
-      stat3: "数据更新",
-      stat3Value: "实时",
+    s1: {
+      title: "模型是什么",
+      p1: "nbaseer 用的是 Elo 评分——国际象棋里那套排名方法，经 FiveThirtyEight 针对篮球改造后广泛用于体育预测。每支球队有一个分数，赢球加分、输球减分，赢得越多加得越多。两队分数之差直接换算成胜率和预测分差。",
+      p2: "这是一个统计模型，不是神经网络，也没有做球员级别的建模。它只看球队层面的结果：谁赢了、赢了多少分、什么时候打的、在谁的主场打的。选择它的理由是简单、可复现、且在篮球上表现稳定——不是因为它是最强的方法。",
+      stat1: "胜负命中率",
+      stat2: "回测场次",
+      stat3: "模型版本",
     },
-    section2: {
-      title: "数据来源与处理",
-      text: "我们的系统整合了多个权威数据源，确保预测所依赖的数据准确、全面且实时更新。",
+    s2: {
+      title: "数据来源",
+      text: "全部数据来自公开接口，没有私有数据源，也没有内幕信息。",
       sources: [
-        { name: "ESPN API", desc: "实时比分、赛程安排、比赛状态" },
-        { name: "NBA 官方数据", desc: "球队统计、球员数据、历史战绩" },
-        { name: "The Odds API", desc: "博彩赔率、让分盘、大小分盘" },
+        { name: "ESPN Scoreboard API", desc: "赛程、比分、比赛状态。每 10 分钟同步一次，覆盖昨天到未来三天。免费且无配额限制。" },
+        { name: "The Odds API", desc: "美国多家博彩公司的独赢盘、让分盘和大小分。免费额度每月 500 credits，因此每 6 小时才取一次，取多家均值。" },
+        { name: "历史回放", desc: "评分的起点由 2025-26 赛季全部 1,322 场比赛按时间顺序回放得出，赛季之间向 1500 分回归 25%。" },
       ],
     },
-    section3: {
-      title: "特征工程",
-      text: "特征工程是机器学习中最关键的环节之一。我们从原始数据中提取了超过 50 个有意义的特征维度。",
-      tableHeaders: ["特征类别", "具体特征", "重要性"],
-      features: [
-        { cat: "基础战绩", details: "胜率、主场胜率、客场胜率、分区排名", importance: "高" },
-        { cat: "近期状态", details: "近 5/10 场胜率、连胜/连败、得分趋势", importance: "高" },
-        { cat: "进攻能力", details: "场均得分、进攻效率、三分命中率、助攻数", importance: "中" },
-        { cat: "防守能力", details: "场均失分、防守效率、篮板、抢断、盖帽", importance: "中" },
-        { cat: "对战历史", details: "历史交锋胜率、场均分差、主客场战绩", importance: "中" },
-        { cat: "体能因素", details: "背靠背比赛、休息天数、旅途距离", importance: "高" },
-        { cat: "比赛节奏", details: "回合数、节奏指数、快攻得分", importance: "低" },
-      ],
-      high: "高",
-      medium: "中",
-      low: "低",
-    },
-    section4: {
-      title: "预测模型架构",
-      text: "我们采用了集成学习的方法，构建了三个独立但相互关联的预测模型。",
-      models: [
-        { name: "胜负预测模型", type: "XGBoost 分类器", input: "输入: 特征向量", output: "输出: 主队获胜概率" },
-        { name: "分差预测模型", type: "XGBoost 回归器", input: "输入: 特征向量", output: "输出: 预测分差" },
-        { name: "总分预测模型", type: "XGBoost 回归器", input: "输入: 特征向量", output: "输出: 两队总得分" },
-      ],
-      whyXGBoost: "为什么选择 XGBoost?",
-      xgboostReasons: [
-        "优秀的处理缺失值能力",
-        "内置正则化防止过拟合",
-        "高效的并行计算",
-        "强大的特征重要性分析",
+    s3: {
+      title: "评分如何更新",
+      text: "每场比赛结束后，按下面的公式调整双方评分。这是 FiveThirtyEight 的净胜分缩放版本——赢 30 分比赢 2 分更能说明问题，但收益递减，避免垃圾时间的比分虚增评分。",
+      formulaLabel: "评分变化量",
+      notes: [
+        "K = 24：单场最大调整幅度的基准",
+        "MOV：净胜分；(MOV+3)^0.8 让大胜多加分，但增速递减",
+        "分母中的 0.006 × 评分差：强队赢弱队时少加分，防止评分发散",
+        "预期胜率来自赛前评分差，已计入主场与背靠背调整",
       ],
     },
-    section5: {
-      title: "模型训练与优化",
-      trainingData: "训练数据",
-      trainingItems: [
-        "近 3 个赛季的全部比赛数据",
-        "超过 3,600 场常规赛",
-        "300+ 场季后赛数据",
-      ],
-      optimization: "优化策略",
-      optimizationItems: [
-        "5 折交叉验证",
-        "贝叶斯超参数优化",
-        "特征选择与降维",
+    s4: {
+      title: "从评分到预测",
+      text: "预测时先算出这场比赛的有效评分差，再换算成三个输出。",
+      steps: [
+        { label: "有效评分差", desc: "主队评分 + 55（主场优势）− 客队评分；任一方打背靠背再扣 25 分。" },
+        { label: "胜率", desc: "标准 Elo 公式：1 / (1 + 10^(−评分差/400))，结果限制在 3%–97% 之间。" },
+        { label: "分差", desc: "评分差 ÷ 22。约每 22 分 Elo 对应 1 分净胜分，所以 55 分主场优势 ≈ 2.5 分。" },
+        { label: "总分", desc: "由两队的场均得分与场均失分估算。赛季初样本少，按 20 场的先验强度向联盟均值（114 分）回归。" },
+        { label: "信心度", desc: "就是模型给自己所选一方的概率，即 max(主队胜率, 客队胜率)。势均力敌的比赛显示 50% 出头，不做包装。" },
       ],
     },
-    section6: {
-      title: "准确率与验证",
-      text: "我们使用历史数据进行回测验证，确保模型在实际应用中的可靠性。",
-      metrics: [
-        { label: "胜负预测", value: "67.8%", sublabel: "准确率" },
-        { label: "分差预测", value: "8.2", sublabel: "MAE (平均绝对误差)" },
-        { label: "总分预测", value: "12.5", sublabel: "MAE (平均绝对误差)" },
-      ],
-      warning: "重要提示: 博彩市场效率很高，即使是最好的模型也难以保证长期盈利。本系统仅供参考和娱乐，请理性投注。",
+    s5: {
+      title: "盘口校准",
+      p1: "博彩公司的开盘价是市场上最强的预测之一。有赔率数据时，模型会和盘口各取一半：胜率、分差、总分都做 50/50 混合，赔率先剔除抽水（两边概率归一化），并对多家取均值。",
+      p2: "没有赔率时模型独立出数——这也是常态，因为免费额度只够每 6 小时取一次。每条预测都带 model_version 字段，后缀 +market 表示混入了盘口，model 表示纯模型输出。",
     },
-    section7: {
-      title: "实时预测系统",
-      text: "我们的系统采用 Cloudflare Workers 实现边缘计算，确保全球用户都能获得低延迟的实时预测服务。",
-      techStack: "技术架构",
-      techItems: [
-        "Next.js 15 + React 服务端渲染",
-        "Cloudflare Pages 全球 CDN",
-        "Cloudflare D1 SQLite 数据库",
-        "Cloudflare Workers 定时任务",
+    s6: {
+      title: "回测结果",
+      method:
+        "下面的数字来自滚动回测（walk-forward）：按时间顺序逐场预测，每场预测完成之后，才把这场的结果并入评分。也就是说预测时用的信息，全部是比赛开打前就已经存在的。前 150 场是评分预热期，此时所有球队还都在 1500 分附近，预测没有信息量，因此排除在统计之外。",
+      metrics: "指标",
+      value: "数值",
+      meaning: "含义",
+      rows: [
+        ["胜负命中率", `${BACKTEST.winner_accuracy}%`, `选对获胜方 ${BACKTEST.correct_winners} / ${BACKTEST.games_evaluated} 场。作为参照，无脑选主队约 57%。`],
+        ["Brier 分数", `${BACKTEST.brier_score}`, "概率预测的均方误差。0.25 相当于每场都说 50%，越低说明概率越有信息量。"],
+        ["平均分差误差", `${BACKTEST.spread_mae} 分`, "预测分差与实际分差的平均绝对差。NBA 单场净胜分波动很大，这个量级属正常。"],
+        ["平均总分误差", `${BACKTEST.total_mae} 分`, "预测总分与实际总分的平均绝对差。这是模型最弱的一项，见下一节。"],
+        ["总分 ±10 分命中率", `${BACKTEST.total_accuracy}%`, "预测总分落在实际总分 10 分以内的比例。"],
       ],
-      updateFreq: "数据更新频率",
-      updateItems: [
-        "比赛数据: 每 30 分钟",
-        "赔率数据: 每小时",
-        "预测结果: 实时计算",
-        "历史统计: 每日更新",
-      ],
+      caveat:
+        "这是单赛季、单次回测的结果，样本 1,172 场。胜负命中率的统计标准误约 1.4 个百分点，所以 67.8% 应当理解为「大约 65%–70%」，而不是一个精确值。换一个赛季重跑，数字会变。",
     },
-    section8: {
-      title: "未来规划",
-      plans: [
-        { quarter: "Q2 2024", title: "深度学习升级", desc: "引入 Transformer 架构处理序列数据" },
-        { quarter: "Q3 2024", title: "球员级别分析", desc: "加入球员伤病、出场时间等因素" },
-        { quarter: "Q4 2024", title: "实时盘口追踪", desc: "监控盘口变化，发现价值投注" },
-        { quarter: "2025", title: "多联赛扩展", desc: "支持 NFL、MLB、NHL 等联赛" },
+    s7: {
+      title: "模型的局限",
+      text: "这些是已知的弱点，不打算藏着：",
+      limits: [
+        { t: "看不见伤病", d: "模型完全不知道谁没上场。当家球星缺阵时，它照旧按满编实力预测，这类比赛会错得很离谱。" },
+        { t: "总分预测偏弱", d: `平均误差 ${BACKTEST.total_mae} 分，只比直接报联盟均值好一点。场均得分同时混杂了节奏和效率，分不开就难做准。` },
+        { t: "赛季初不准", d: "开赛前几周评分主要来自上赛季的遗产，阵容变动、新秀成长都没体现。前 10-15 场的预测应当打折看待。" },
+        { t: "跑不赢盘口", d: "让分盘命中率 52.9%，扣掉抽水后不具备正期望。这个模型不是用来赢钱的工具。" },
+        { t: "不做球员建模", d: "没有出场时间、伤病报告、球员效率值。只有球队层面的胜负和得失分。" },
       ],
     },
-    footer: "NBAseer AI Prediction Engine v4.2 PRO | 最后更新: 2024年3月",
+    disclaimerTitle: "免责声明",
+    disclaimerText:
+      "以上全部内容仅供参考，不构成任何投注或投资建议。模型经常出错，回测表现不代表未来结果。",
+    seeHistory: "查看实时累计的准确率",
+    footerPrefix: "模型版本",
+    footerBacktest: "回测区间",
+    footerGenerated: "生成于",
   },
   en: {
-    badge: "Technical Whitepaper",
-    title: "NBAseer AI Prediction Engine",
-    subtitle: "Technical Whitepaper",
-    description: "Learn how we use machine learning and big data analytics to predict NBA game outcomes",
-    toc: "Table of Contents",
+    badge: "Method",
+    title: "The nbaseer model",
+    subtitle: "How it works, and how well",
+    description:
+      "What data goes in, how the numbers come out, how many games it was validated on, and what it cannot do. No marketing language.",
+    toc: "Contents",
     tocItems: [
-      { id: "overview", label: "1. System Overview" },
-      { id: "data", label: "2. Data Sources & Processing" },
-      { id: "features", label: "3. Feature Engineering" },
-      { id: "model", label: "4. Prediction Model Architecture" },
-      { id: "training", label: "5. Model Training & Optimization" },
-      { id: "accuracy", label: "6. Accuracy & Validation" },
-      { id: "realtime", label: "7. Real-Time Prediction System" },
-      { id: "future", label: "8. Future Roadmap" },
+      { id: "overview", label: "1. What the model is" },
+      { id: "data", label: "2. Data sources" },
+      { id: "elo", label: "3. How ratings update" },
+      { id: "predict", label: "4. From ratings to predictions" },
+      { id: "market", label: "5. Market calibration" },
+      { id: "accuracy", label: "6. Backtest results" },
+      { id: "limits", label: "7. Limitations" },
     ],
-    section1: {
-      title: "System Overview",
-      text: "NBAseer is a machine learning-based NBA game prediction system designed to provide accurate win/loss predictions, spread predictions, and over/under predictions by analyzing historical data, team performance, and player conditions.",
-      stat1: "Win/Loss Accuracy",
-      stat2: "Analysis Dimensions",
-      stat3: "Data Update",
-      stat3Value: "Real-time",
+    s1: {
+      title: "What the model is",
+      p1: "nbaseer uses Elo ratings — the chess ranking system, adapted for basketball by FiveThirtyEight and widely used in sports forecasting. Each team holds a number that rises when it wins and falls when it loses, scaled by how convincingly. The gap between two teams' numbers converts directly into a win probability and a predicted margin.",
+      p2: "This is a statistical model, not a neural network, and there is no player-level modelling. It sees only team-level outcomes: who won, by how much, when, and on whose floor. It was chosen for being simple, reproducible and stable on basketball — not for being the strongest method available.",
+      stat1: "Winner accuracy",
+      stat2: "Games backtested",
+      stat3: "Model version",
     },
-    section2: {
-      title: "Data Sources & Processing",
-      text: "Our system integrates multiple authoritative data sources to ensure accurate, comprehensive, and real-time data for predictions.",
+    s2: {
+      title: "Data sources",
+      text: "Everything comes from public APIs. No private feeds, no inside information.",
       sources: [
-        { name: "ESPN API", desc: "Live scores, schedules, game status" },
-        { name: "NBA Official Data", desc: "Team stats, player data, historical records" },
-        { name: "The Odds API", desc: "Betting odds, spreads, over/under lines" },
+        { name: "ESPN Scoreboard API", desc: "Schedule, scores and game status. Synced every 10 minutes across yesterday through three days out. Free and unmetered." },
+        { name: "The Odds API", desc: "Moneyline, spread and totals from US bookmakers. The free tier allows 500 credits a month, so this is fetched only every 6 hours and averaged across books." },
+        { name: "Historical replay", desc: "Ratings are seeded by replaying all 1,322 games of the 2025-26 season in order, then regressing 25% toward 1500 between seasons." },
       ],
     },
-    section3: {
-      title: "Feature Engineering",
-      text: "Feature engineering is one of the most critical aspects of machine learning. We extract over 50 meaningful feature dimensions from raw data.",
-      tableHeaders: ["Feature Category", "Specific Features", "Importance"],
-      features: [
-        { cat: "Basic Record", details: "Win rate, home win rate, away win rate, division rank", importance: "high" },
-        { cat: "Recent Form", details: "Last 5/10 game win rate, streaks, scoring trends", importance: "high" },
-        { cat: "Offense", details: "PPG, offensive efficiency, 3PT%, assists", importance: "medium" },
-        { cat: "Defense", details: "Opponent PPG, defensive efficiency, rebounds, steals, blocks", importance: "medium" },
-        { cat: "Head-to-Head", details: "Historical matchup win rate, avg spread, home/away record", importance: "medium" },
-        { cat: "Fatigue", details: "Back-to-back games, rest days, travel distance", importance: "high" },
-        { cat: "Pace", details: "Possessions, pace index, fast break points", importance: "low" },
-      ],
-      high: "High",
-      medium: "Medium",
-      low: "Low",
-    },
-    section4: {
-      title: "Prediction Model Architecture",
-      text: "We employ ensemble learning methods to build three independent but interconnected prediction models.",
-      models: [
-        { name: "Win/Loss Predictor", type: "XGBoost Classifier", input: "Input: Feature Vector", output: "Output: Home Win Probability" },
-        { name: "Spread Predictor", type: "XGBoost Regressor", input: "Input: Feature Vector", output: "Output: Predicted Spread" },
-        { name: "Total Predictor", type: "XGBoost Regressor", input: "Input: Feature Vector", output: "Output: Combined Score" },
-      ],
-      whyXGBoost: "Why XGBoost?",
-      xgboostReasons: [
-        "Excellent handling of missing values",
-        "Built-in regularization to prevent overfitting",
-        "Efficient parallel computation",
-        "Powerful feature importance analysis",
+    s3: {
+      title: "How ratings update",
+      text: "After each game both teams' ratings move by the amount below. This is FiveThirtyEight's margin-of-victory formulation: a 30-point win says more than a 2-point win, but with diminishing returns so garbage-time scoring cannot inflate a rating.",
+      formulaLabel: "Rating change",
+      notes: [
+        "K = 24 sets the baseline size of a single-game adjustment",
+        "MOV is margin of victory; (MOV+3)^0.8 rewards blowouts at a decreasing rate",
+        "The 0.006 × rating gap term shrinks the gain when a strong team beats a weak one, keeping ratings from diverging",
+        "Expected win probability comes from the pre-game gap, already including home court and back-to-back adjustments",
       ],
     },
-    section5: {
-      title: "Model Training & Optimization",
-      trainingData: "Training Data",
-      trainingItems: [
-        "All game data from the last 3 seasons",
-        "Over 3,600 regular season games",
-        "300+ playoff games",
-      ],
-      optimization: "Optimization Strategy",
-      optimizationItems: [
-        "5-fold cross-validation",
-        "Bayesian hyperparameter optimization",
-        "Feature selection and dimensionality reduction",
+    s4: {
+      title: "From ratings to predictions",
+      text: "A prediction starts from the effective rating gap for that specific game, then converts it into three outputs.",
+      steps: [
+        { label: "Effective rating gap", desc: "Home rating + 55 (home court) − away rating; subtract another 25 from either side playing the second night of a back-to-back." },
+        { label: "Win probability", desc: "The standard Elo formula: 1 / (1 + 10^(−gap/400)), clamped to between 3% and 97%." },
+        { label: "Spread", desc: "Gap ÷ 22. Roughly 22 Elo points equal one point of margin, which makes the 55-point home edge worth about 2.5 points." },
+        { label: "Total", desc: "Estimated from both teams' points scored and allowed per game. Early in a season the sample is thin, so it regresses toward the league average of 114 with a 20-game prior." },
+        { label: "Confidence", desc: "Simply the probability assigned to the side the model picked: max(home, away). An even game reads just over 50% rather than being dressed up." },
       ],
     },
-    section6: {
-      title: "Accuracy & Validation",
-      text: "We use historical data for backtesting to ensure model reliability in real-world applications.",
-      metrics: [
-        { label: "Win/Loss", value: "67.8%", sublabel: "Accuracy" },
-        { label: "Spread", value: "8.2", sublabel: "MAE (Mean Absolute Error)" },
-        { label: "Total", value: "12.5", sublabel: "MAE (Mean Absolute Error)" },
-      ],
-      warning: "Important: Betting markets are highly efficient, and even the best models cannot guarantee long-term profits. This system is for reference and entertainment only. Please bet responsibly.",
+    s5: {
+      title: "Market calibration",
+      p1: "A bookmaker's opening line is among the strongest forecasts available. When odds are present the model is blended 50/50 with the market across win probability, spread and total. The vig is removed first by normalising the two sides to sum to one, and quotes are averaged across books.",
+      p2: "Without odds the model stands alone — which is the normal case, since the free quota only stretches to one fetch every 6 hours. Each prediction carries a model_version field: a +market suffix means the line was blended in, plain model means pure model output.",
     },
-    section7: {
-      title: "Real-Time Prediction System",
-      text: "Our system uses Cloudflare Workers for edge computing, ensuring low-latency real-time prediction services for users worldwide.",
-      techStack: "Tech Stack",
-      techItems: [
-        "Next.js 15 + React Server-Side Rendering",
-        "Cloudflare Pages Global CDN",
-        "Cloudflare D1 SQLite Database",
-        "Cloudflare Workers Scheduled Tasks",
+    s6: {
+      title: "Backtest results",
+      method:
+        "These come from a walk-forward backtest: games are predicted in chronological order, and each result is folded into the ratings only after its prediction was recorded. Every prediction therefore used only information that existed before tip-off. The first 150 games are a warm-up in which every team still sits near 1500 and predictions carry no information, so they are excluded.",
+      metrics: "Metric",
+      value: "Value",
+      meaning: "What it means",
+      rows: [
+        ["Winner accuracy", `${BACKTEST.winner_accuracy}%`, `Picked the winner in ${BACKTEST.correct_winners} of ${BACKTEST.games_evaluated} games. For reference, always picking the home team is about 57%.`],
+        ["Brier score", `${BACKTEST.brier_score}`, "Mean squared error of the probabilities. 0.25 is what saying 50% every game would score; lower means the probabilities carry information."],
+        ["Avg spread error", `${BACKTEST.spread_mae} pts`, "Mean absolute difference between predicted and actual margin. NBA margins are noisy, so this magnitude is normal."],
+        ["Avg total error", `${BACKTEST.total_mae} pts`, "Mean absolute difference between predicted and actual combined score. This is the model's weakest output — see the next section."],
+        ["Total within ±10", `${BACKTEST.total_accuracy}%`, "Share of games where the predicted total landed within 10 points of the actual total."],
       ],
-      updateFreq: "Data Update Frequency",
-      updateItems: [
-        "Game data: Every 30 minutes",
-        "Odds data: Hourly",
-        "Predictions: Real-time calculation",
-        "Historical stats: Daily updates",
-      ],
+      caveat:
+        "This is one backtest over one season, 1,172 games. The standard error on the winner accuracy is about 1.4 percentage points, so 67.8% should be read as \"roughly 65–70%\", not as a precise figure. Run it on a different season and the number moves.",
     },
-    section8: {
-      title: "Future Roadmap",
-      plans: [
-        { quarter: "Q2 2024", title: "Deep Learning Upgrade", desc: "Introduce Transformer architecture for sequence data" },
-        { quarter: "Q3 2024", title: "Player-Level Analysis", desc: "Add player injuries, playing time factors" },
-        { quarter: "Q4 2024", title: "Real-Time Line Tracking", desc: "Monitor line movements, find value bets" },
-        { quarter: "2025", title: "Multi-League Expansion", desc: "Support NFL, MLB, NHL and more" },
+    s7: {
+      title: "Limitations",
+      text: "These are the known weaknesses, stated plainly:",
+      limits: [
+        { t: "Blind to injuries", d: "The model has no idea who is not playing. With a star out it still predicts at full strength, and those games can be badly wrong." },
+        { t: "Weak on totals", d: `An average error of ${BACKTEST.total_mae} points is only slightly better than quoting the league average. Points per game conflates pace and efficiency, and separating them needs data this model does not have.` },
+        { t: "Unreliable early", d: "For the first few weeks ratings mostly reflect last season's legacy, with no account of roster changes or rookie development. Discount the first 10–15 games accordingly." },
+        { t: "Does not beat the spread", d: "Against-the-spread accuracy is 52.9%, which is not a positive edge after the vig. This is not a tool for making money." },
+        { t: "No player modelling", d: "No minutes, no injury reports, no player efficiency. Only team-level results and scoring." },
       ],
     },
-    footer: "NBAseer AI Prediction Engine v4.2 PRO | Last Updated: March 2024",
+    disclaimerTitle: "Disclaimer",
+    disclaimerText:
+      "Everything above is for reference only and is not betting or investment advice. The model is wrong regularly, and backtest performance does not predict future results.",
+    seeHistory: "See accuracy accumulating live",
+    footerPrefix: "Model version",
+    footerBacktest: "Backtest range",
+    footerGenerated: "Generated",
   },
 };
+
+const ELO_FORMULA = "Δ = K × ((MOV + 3)^0.8 ÷ (7.5 + 0.006 × 评分差)) × (实际结果 − 预期胜率)";
+const ELO_FORMULA_EN = "Δ = K × ((MOV + 3)^0.8 ÷ (7.5 + 0.006 × ratingGap)) × (actual − expected)";
+
+function SectionHeading({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <h2 className="text-2xl font-black flex items-center gap-3">
+      <span className="w-8 h-8 shrink-0 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">
+        {n}
+      </span>
+      {children}
+    </h2>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">{children}</div>
+  );
+}
 
 export default function WhitepaperPage() {
   const { locale } = useLocale();
   const t = content[locale];
 
-  const getImportanceColor = (importance: string) => {
-    const lower = importance.toLowerCase();
-    if (lower === "高" || lower === "high") return "text-green-400";
-    if (lower === "中" || lower === "medium") return "text-yellow-400";
-    return "text-slate-400";
-  };
-
   return (
-    <div className="pt-28 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
+    <div className="pt-8 pb-16 px-4 md:px-8 max-w-screen-2xl mx-auto">
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
         <div className="space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
             <span className="text-xs font-bold text-primary tracking-widest uppercase">{t.badge}</span>
@@ -268,10 +234,9 @@ export default function WhitepaperPage() {
             {t.title}
             <span className="block text-primary mt-2">{t.subtitle}</span>
           </h1>
-          <p className="text-lg text-slate-400">{t.description}</p>
+          <p className="text-lg text-slate-400 leading-relaxed">{t.description}</p>
         </div>
 
-        {/* Table of Contents */}
         <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6">
           <h2 className="text-lg font-bold mb-4">{t.toc}</h2>
           <nav className="space-y-2 text-slate-400">
@@ -283,234 +248,164 @@ export default function WhitepaperPage() {
           </nav>
         </div>
 
-        {/* Content Sections */}
         <div className="space-y-12">
-          {/* Section 1 */}
+          {/* 1 */}
           <section id="overview" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">1</span>
-              {t.section1.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <p className="text-slate-300 leading-relaxed">{t.section1.text}</p>
-              <div className="grid md:grid-cols-3 gap-4 mt-6">
+            <SectionHeading n={1}>{t.s1.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s1.p1}</p>
+              <p className="text-slate-400 leading-relaxed">{t.s1.p2}</p>
+              <div className="grid md:grid-cols-3 gap-4 pt-2">
                 <div className="p-4 bg-[#1b2028] rounded-lg text-center">
-                  <div className="text-3xl font-black text-primary">67.8%</div>
-                  <div className="text-sm text-slate-400 mt-1">{t.section1.stat1}</div>
+                  <div className="text-3xl font-black text-primary">{BACKTEST.winner_accuracy}%</div>
+                  <div className="text-sm text-slate-400 mt-1">{t.s1.stat1}</div>
                 </div>
                 <div className="p-4 bg-[#1b2028] rounded-lg text-center">
-                  <div className="text-3xl font-black text-blue-400">50+</div>
-                  <div className="text-sm text-slate-400 mt-1">{t.section1.stat2}</div>
+                  <div className="text-3xl font-black text-blue-400">
+                    {BACKTEST.games_evaluated.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-slate-400 mt-1">{t.s1.stat2}</div>
                 </div>
                 <div className="p-4 bg-[#1b2028] rounded-lg text-center">
-                  <div className="text-3xl font-black text-green-400">{t.section1.stat3Value}</div>
-                  <div className="text-sm text-slate-400 mt-1">{t.section1.stat3}</div>
+                  <div className="text-2xl font-black text-green-400 break-all">
+                    {BACKTEST.model_version}
+                  </div>
+                  <div className="text-sm text-slate-400 mt-1">{t.s1.stat3}</div>
                 </div>
               </div>
-            </div>
+            </Card>
           </section>
 
-          {/* Section 2 */}
+          {/* 2 */}
           <section id="data" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">2</span>
-              {t.section2.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <p className="text-slate-300 leading-relaxed">{t.section2.text}</p>
-              <div className="space-y-3 mt-4">
-                {t.section2.sources.map((source, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-[#1b2028] rounded-lg">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${i === 0 ? "bg-primary" : i === 1 ? "bg-blue-400" : "bg-green-400"}`} />
+            <SectionHeading n={2}>{t.s2.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s2.text}</p>
+              <div className="space-y-3">
+                {t.s2.sources.map((source, i) => (
+                  <div key={source.name} className="flex items-start gap-3 p-3 bg-[#1b2028] rounded-lg">
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                        i === 0 ? "bg-primary" : i === 1 ? "bg-blue-400" : "bg-green-400"
+                      }`}
+                    />
                     <div>
                       <h4 className="font-bold">{source.name}</h4>
-                      <p className="text-sm text-slate-400">{source.desc}</p>
+                      <p className="text-sm text-slate-400 leading-relaxed">{source.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </section>
 
-          {/* Section 3 */}
-          <section id="features" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">3</span>
-              {t.section3.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <p className="text-slate-300 leading-relaxed">{t.section3.text}</p>
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full text-sm">
+          {/* 3 */}
+          <section id="elo" className="space-y-4">
+            <SectionHeading n={3}>{t.s3.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s3.text}</p>
+              <div className="bg-[#1b2028] rounded-lg p-4 overflow-x-auto">
+                <div className="text-xs text-slate-500 mb-2">{t.s3.formulaLabel}</div>
+                <code className="text-sm text-primary whitespace-nowrap">
+                  {locale === "zh" ? ELO_FORMULA : ELO_FORMULA_EN}
+                </code>
+              </div>
+              <ul className="space-y-2 text-slate-400 text-sm">
+                {t.s3.notes.map((note) => (
+                  <li key={note} className="flex items-start gap-3">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 shrink-0" />
+                    <span className="leading-relaxed">{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </section>
+
+          {/* 4 */}
+          <section id="predict" className="space-y-4">
+            <SectionHeading n={4}>{t.s4.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s4.text}</p>
+              <div className="space-y-3">
+                {t.s4.steps.map((step) => (
+                  <div key={step.label} className="p-4 bg-[#1b2028] rounded-lg">
+                    <h4 className="font-bold text-slate-200 mb-1">{step.label}</h4>
+                    <p className="text-sm text-slate-400 leading-relaxed">{step.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </section>
+
+          {/* 5 */}
+          <section id="market" className="space-y-4">
+            <SectionHeading n={5}>{t.s5.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s5.p1}</p>
+              <p className="text-slate-400 leading-relaxed">{t.s5.p2}</p>
+            </Card>
+          </section>
+
+          {/* 6 */}
+          <section id="accuracy" className="space-y-4">
+            <SectionHeading n={6}>{t.s6.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s6.method}</p>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[560px] text-sm">
                   <thead>
-                    <tr className="border-b border-white/10 text-left">
-                      {t.section3.tableHeaders.map((header, i) => (
-                        <th key={i} className="py-3 px-4 font-bold">{header}</th>
-                      ))}
+                    <tr className="text-left text-xs text-slate-500 uppercase border-b border-white/5">
+                      <th className="py-3 pr-4">{t.s6.metrics}</th>
+                      <th className="py-3 pr-4">{t.s6.value}</th>
+                      <th className="py-3">{t.s6.meaning}</th>
                     </tr>
                   </thead>
-                  <tbody className="text-slate-400">
-                    {t.section3.features.map((feature, i) => (
-                      <tr key={i} className={i < t.section3.features.length - 1 ? "border-b border-white/5" : ""}>
-                        <td className="py-3 px-4">{feature.cat}</td>
-                        <td className="py-3 px-4">{feature.details}</td>
-                        <td className="py-3 px-4">
-                          <span className={getImportanceColor(feature.importance)}>
-                            {feature.importance === "high" ? t.section3.high : feature.importance === "medium" ? t.section3.medium : feature.importance === "low" ? t.section3.low : feature.importance}
-                          </span>
-                        </td>
+                  <tbody>
+                    {t.s6.rows.map(([metric, value, meaning]) => (
+                      <tr key={metric} className="border-b border-white/5 last:border-0 align-top">
+                        <td className="py-3 pr-4 font-bold text-slate-200 whitespace-nowrap">{metric}</td>
+                        <td className="py-3 pr-4 font-black text-primary whitespace-nowrap">{value}</td>
+                        <td className="py-3 text-slate-400 leading-relaxed">{meaning}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+              <p className="text-sm text-slate-400 leading-relaxed border-l-2 border-yellow-500/40 pl-4">
+                {t.s6.caveat}
+              </p>
+              <Link href="/history" className="inline-block text-primary hover:underline text-sm">
+                {t.seeHistory} →
+              </Link>
+            </Card>
           </section>
 
-          {/* Section 4 */}
-          <section id="model" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">4</span>
-              {t.section4.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-6">
-              <p className="text-slate-300 leading-relaxed">{t.section4.text}</p>
-              <div className="grid md:grid-cols-3 gap-4">
-                {t.section4.models.map((model, i) => (
-                  <div key={i} className={`p-5 bg-gradient-to-br ${i === 0 ? "from-primary/20" : i === 1 ? "from-blue-500/20" : "from-green-500/20"} to-transparent border ${i === 0 ? "border-primary/20" : i === 1 ? "border-blue-500/20" : "border-green-500/20"} rounded-xl`}>
-                    <h4 className="font-bold text-lg mb-2">{model.name}</h4>
-                    <p className="text-sm text-slate-400 mb-3">{model.type}</p>
-                    <div className="text-xs text-slate-500">
-                      <div>{model.input}</div>
-                      <div>{model.output}</div>
-                    </div>
+          {/* 7 */}
+          <section id="limits" className="space-y-4">
+            <SectionHeading n={7}>{t.s7.title}</SectionHeading>
+            <Card>
+              <p className="text-slate-300 leading-relaxed">{t.s7.text}</p>
+              <div className="space-y-3">
+                {t.s7.limits.map((limit) => (
+                  <div key={limit.t} className="p-4 bg-[#1b2028] rounded-lg">
+                    <h4 className="font-bold text-slate-200 mb-1">{limit.t}</h4>
+                    <p className="text-sm text-slate-400 leading-relaxed">{limit.d}</p>
                   </div>
                 ))}
               </div>
-              <div className="p-4 bg-[#1b2028] rounded-lg">
-                <h4 className="font-bold mb-2">{t.section4.whyXGBoost}</h4>
-                <ul className="text-sm text-slate-400 space-y-1">
-                  {t.section4.xgboostReasons.map((reason, i) => (
-                    <li key={i}>• {reason}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 5 */}
-          <section id="training" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">5</span>
-              {t.section5.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-bold mb-3">{t.section5.trainingData}</h4>
-                  <ul className="text-sm text-slate-400 space-y-2">
-                    {t.section5.trainingItems.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-bold mb-3">{t.section5.optimization}</h4>
-                  <ul className="text-sm text-slate-400 space-y-2">
-                    {t.section5.optimizationItems.map((item, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 6 */}
-          <section id="accuracy" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">6</span>
-              {t.section6.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <p className="text-slate-300 leading-relaxed">{t.section6.text}</p>
-              <div className="grid md:grid-cols-3 gap-4 mt-4">
-                {t.section6.metrics.map((metric, i) => (
-                  <div key={i} className="p-4 bg-[#1b2028] rounded-lg">
-                    <div className="text-sm text-slate-400 mb-1">{metric.label}</div>
-                    <div className={`text-2xl font-black ${i === 0 ? "text-green-400" : i === 1 ? "text-blue-400" : "text-primary"}`}>{metric.value}</div>
-                    <div className="text-xs text-slate-500 mt-1">{metric.sublabel}</div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full mt-2">
-                      <div className={`h-full rounded-full ${i === 0 ? "bg-green-400" : i === 1 ? "bg-blue-400" : "bg-primary"}`} style={{ width: i === 0 ? "67.8%" : i === 1 ? "60%" : "55%" }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg mt-4">
-                <p className="text-sm text-yellow-200">{t.section6.warning}</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 7 */}
-          <section id="realtime" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">7</span>
-              {t.section7.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <p className="text-slate-300 leading-relaxed">{t.section7.text}</p>
-              <div className="grid md:grid-cols-2 gap-4 mt-4">
-                <div className="p-4 bg-[#1b2028] rounded-lg space-y-3">
-                  <h4 className="font-bold">{t.section7.techStack}</h4>
-                  <ul className="text-sm text-slate-400 space-y-1">
-                    {t.section7.techItems.map((item, i) => (
-                      <li key={i}>• {item}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="p-4 bg-[#1b2028] rounded-lg space-y-3">
-                  <h4 className="font-bold">{t.section7.updateFreq}</h4>
-                  <ul className="text-sm text-slate-400 space-y-1">
-                    {t.section7.updateItems.map((item, i) => (
-                      <li key={i}>• {item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 8 */}
-          <section id="future" className="space-y-4">
-            <h2 className="text-2xl font-black flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold">8</span>
-              {t.section8.title}
-            </h2>
-            <div className="bg-[#0f141a] border border-white/5 rounded-xl p-6 space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                {t.section8.plans.map((plan, i) => (
-                  <div key={i} className="p-4 border border-dashed border-white/10 rounded-lg">
-                    <div className={`text-xs font-bold mb-2 ${i === 0 ? "text-primary" : i === 1 ? "text-blue-400" : i === 2 ? "text-green-400" : "text-yellow-400"}`}>{plan.quarter}</div>
-                    <h4 className="font-bold mb-1">{plan.title}</h4>
-                    <p className="text-sm text-slate-400">{plan.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            </Card>
           </section>
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-white/5 pt-8 mt-12">
-          <p className="text-sm text-slate-500 text-center">{t.footer}</p>
-        </div>
+        <section className="bg-[#0f141a] border border-yellow-500/20 p-6 rounded-xl">
+          <h3 className="text-lg font-bold text-yellow-500 mb-3">{t.disclaimerTitle}</h3>
+          <p className="text-slate-400 leading-relaxed">{t.disclaimerText}</p>
+        </section>
+
+        <p className="text-xs text-slate-600 text-center">
+          {t.footerPrefix}: {BACKTEST.model_version} · {t.footerBacktest}: {BACKTEST.range.start} –{" "}
+          {BACKTEST.range.end} · {t.footerGenerated}: {BACKTEST.generated_at.slice(0, 10)}
+        </p>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 name = "nbaseer-worker"
 account_id = "371932342a48f3c3e71ac3588a19e0c5"
-main = "worker-debug.js"
+main = "index.mjs"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
@@ -10,9 +10,12 @@ binding = "DB"
 database_name = "nbaseer-db"
 database_id = "f829cafa-9562-47fd-b4e2-70684a9f78a6"
 
-# Cron trigger - every 30 minutes
+# Scores need to move during games; every 10 minutes keeps the live view honest.
+# Predictions and bookmaker odds are rate-limited inside the worker itself.
 [triggers]
-crons = ["*/30 * * * *"]
+crons = ["*/10 * * * *"]
 
-# Environment variables (set in dashboard or .dev.vars)
-# ODDS_API_KEY = "your-api-key"
+# ODDS_API_KEY is a Worker secret. Set it once with:
+#   npx wrangler secret put ODDS_API_KEY
+# or via the GitHub Actions secret of the same name. It is optional — without it
+# the model runs on its own ratings instead of blending in the market.

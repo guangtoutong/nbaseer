@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale } from "@/lib/LocaleContext";
 
 const content = {
@@ -44,19 +44,41 @@ const content = {
   },
 };
 
+const DISMISS_KEY = "nbaseer.adbanner.dismissed";
+
 export function AdBanner() {
-  const [isVisible, setIsVisible] = useState(true);
+  // Start hidden so the server-rendered markup matches the first client paint,
+  // then reveal unless the visitor already dismissed it.
+  const [isVisible, setIsVisible] = useState(false);
   const { locale } = useLocale();
   const t = content[locale];
+
+  useEffect(() => {
+    try {
+      setIsVisible(localStorage.getItem(DISMISS_KEY) !== "1");
+    } catch {
+      setIsVisible(true);
+    }
+  }, []);
+
+  function dismiss() {
+    setIsVisible(false);
+    try {
+      localStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      // Private mode: dismissing for this page view is still better than nothing.
+    }
+  }
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-20 left-0 right-0 z-40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50 shadow-lg">
+    <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b border-slate-700/50">
       <div className="max-w-screen-2xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
-          {/* Ads */}
-          <div className="flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 overflow-x-auto">
+          {/* Ads — one scrollable row so the banner height never grows enough to
+              push the page content off screen on a phone. */}
+          <div className="flex-1 flex flex-row items-center gap-3 sm:gap-6 overflow-x-auto">
             {t.ads.map((ad) => (
               <a
                 key={ad.name}
@@ -71,11 +93,11 @@ export function AdBanner() {
                     <span className="font-bold text-slate-200 group-hover:text-primary transition-colors">
                       {ad.name}
                     </span>
-                    <span className="text-xs text-slate-400">
+                    <span className="hidden sm:inline text-xs text-slate-400">
                       {ad.tagline}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
+                  <span className="hidden lg:inline text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
                     {ad.description}
                   </span>
                 </div>
@@ -98,7 +120,7 @@ export function AdBanner() {
 
           {/* Close button */}
           <button
-            onClick={() => setIsVisible(false)}
+            onClick={dismiss}
             className="flex-shrink-0 p-1.5 text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 rounded transition-all"
             title={t.close}
           >
