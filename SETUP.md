@@ -57,7 +57,20 @@ Worker 通过 GitHub Actions 自动部署（`.github/workflows/deploy-worker.yml
 | `CLOUDFLARE_API_TOKEN` | 是 | 权限需包含 **Workers Scripts: Edit** 和 **D1: Edit** |
 | `ODDS_API_KEY` | 否 | 不配置则模型独立出数，站点照常工作 |
 
-> **历史教训**：`ODDS_API_KEY` 这个 secret 之前被 workflow 无条件传给 `wrangler secret put`，未配置时传入空值导致部署失败，连续 6 次没人发现，数据管道停了半年。现在 workflow 会先判断该 secret 是否非空，为空则跳过这一步。
+> **历史教训 1**：`ODDS_API_KEY` 这个 GitHub secret 从未被创建，而 workflow 无条件把它传给 `wrangler secret put`。空值导致部署失败，连续 6 次没人发现，数据管道停了半年。现在 workflow 会先判断该 secret 是否非空，为空则跳过这一步。
+
+> **历史教训 2**：`ODDS_API_KEY` 曾以**明文环境变量**（`plain_text`）的形式设在 Cloudflare 控制台。`wrangler deploy` 会用 `wrangler.toml` 整体替换绑定集，而配置里没有 `[vars]` 段，于是这个变量被静默抹掉——且 `wrangler secret list` 根本看不到它（那个命令只列 Secret）。
+>
+> **API key 一律用 Secret，不要用明文变量。** Secret 不受 `wrangler deploy` 影响。若误删，Cloudflare 保留最近 20 个版本，明文变量的值可以从版本历史取回：
+>
+> ```bash
+> # 列出版本，找到误删之前的那个
+> curl -H "Authorization: Bearer $TOKEN" \
+>   "https://api.cloudflare.com/client/v4/accounts/$ACC/workers/scripts/nbaseer-worker/versions?per_page=20"
+> # 读取该版本的绑定，plain_text 类型会带 text 字段（secret_text 不会）
+> curl -H "Authorization: Bearer $TOKEN" \
+>   ".../versions/$VERSION_ID" | jq '.result.resources.bindings'
+> ```
 
 首次也可手动部署：
 
