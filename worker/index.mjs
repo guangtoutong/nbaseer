@@ -774,7 +774,23 @@ async function runSync(env, { trigger, force = false } = {}) {
   // 4. predictions — rate-limited independently of the score refresh
   const lastPredict = parseInt((await getMeta(db, "predict_last_run")) || "0", 10);
   if (force || Date.now() - lastPredict >= PREDICT_MIN_INTERVAL_MS) {
-    const oddsMap = await fetchOdds(db, env.ODDS_API_KEY, force, log);
+    // Odds are only worth paying for when there is something to attach them to.
+    // Fetching regardless would burn ~360 of the 500 monthly credits between the
+    // end of one season and the start of the next, on responses nothing consumes.
+    const upcoming = await db
+      .prepare(
+        "SELECT COUNT(*) AS n FROM games WHERE status IN ('scheduled','live') AND date >= ?"
+      )
+      .bind(utcDate(-1))
+      .first();
+
+    let oddsMap = {};
+    if (upcoming?.n > 0) {
+      oddsMap = await fetchOdds(db, env.ODDS_API_KEY, force, log);
+    } else {
+      log.odds = "skipped (no upcoming games)";
+    }
+
     await writePredictions(db, state, oddsMap, log);
     await setMeta(db, "predict_last_run", Date.now());
   } else {
