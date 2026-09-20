@@ -1,14 +1,14 @@
 /**
  * Local stand-in for the ESPN scoreboard API.
  *
- * ESPN sits behind Akamai, which rejects the local workerd runtime on its TLS
- * fingerprint (403 Access Denied) even though the deployed Worker is served
- * normally. This proxy fetches the real API from Node — which Akamai accepts — and
- * serves the identical payload to the worker running under `wrangler dev`, so the
- * whole sync pipeline can be tested locally against genuine data.
+ * The worker reaches ESPN fine on its own, so this is not a connectivity
+ * workaround. It exists to shift real fixtures onto whatever day the worker thinks
+ * is today, which is the only way to exercise the full lifecycle — predict before
+ * tip-off, settle afterwards, update Elo — outside of the season.
  *
  * Run: node scripts/espn-replay.mjs [port]
- * Then: wrangler dev --var ESPN_SCOREBOARD_URL:http://127.0.0.1:8798/scoreboard
+ * Then: echo 'ESPN_SCOREBOARD_URL="http://127.0.0.1:8798/scoreboard"' > worker/.dev.vars
+ *       cd worker && wrangler dev --port 8811
  */
 
 import { createServer } from "node:http";

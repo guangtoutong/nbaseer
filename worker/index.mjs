@@ -38,7 +38,11 @@ const ESPN_SCOREBOARD_HOSTS = [
   "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
 ];
 
-/** Overridable so the pipeline can be exercised end to end against a local replay. */
+/**
+ * Overridable so scripts/espn-replay.mjs can feed the worker a shifted date range —
+ * useful for testing the full game lifecycle out of season. Ordinary local
+ * development needs no override: the hosts above work from workerd too.
+ */
 function scoreboardBases(env) {
   return env.ESPN_SCOREBOARD_URL ? [env.ESPN_SCOREBOARD_URL] : ESPN_SCOREBOARD_HOSTS;
 }

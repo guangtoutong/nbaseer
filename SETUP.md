@@ -171,24 +171,39 @@ cd ..
 npm run dev
 ```
 
-Worker 本地调试：
+Worker 本地调试直接跑即可，会连真实 ESPN：
 
 ```bash
 cd worker
-npx wrangler dev --local
+npx wrangler dev
+curl "http://127.0.0.1:8787/sync?force=1"
 ```
 
-**注意**：ESPN 在 Akamai 后面，会以 TLS 指纹拒绝本地 workerd 运行时（返回 403 Access Denied），而部署到 Cloudflare 后正常。本地要跑通完整链路，用回放代理：
+> **端口被占会报成很奇怪的错。** 若看到 `bind(): ... (os error 10013)`（wrangler v4）
+> 或 `*** std::terminate() called with no exception`（v3），那不是 workerd 坏了，是
+> 端口已被别的进程独占。换个端口：`npx wrangler dev --port 8811`。
+> 用 `Get-NetTCPConnection -LocalPort <port> -State Listen` 查是谁占的。
+
+### 用回放代理模拟有比赛的日子
+
+休赛期或想测「赛前预测 → 赛后结算 → Elo 更新」整条链路时，用
+`scripts/espn-replay.mjs` 把真实 ESPN 数据按日期平移过来：
 
 ```bash
-# 终端 1：把真实 ESPN 数据代理给 worker（REPLAY_SHIFT_DAYS 可把日期平移到有比赛的那天）
+# 终端 1：把 34 天后（开赛周）的数据当作「今天」返回
+#   REPLAY_FORCE_SCHEDULED=1 会把已完赛的比赛改回未开始，用来先产出预测
 REPLAY_SHIFT_DAYS=34 node scripts/espn-replay.mjs 8798
 
 # 终端 2
 cd worker
 echo 'ESPN_SCOREBOARD_URL="http://127.0.0.1:8798/scoreboard"' > .dev.vars
-npx wrangler dev --local
+npx wrangler dev --port 8811
 ```
+
+测完**记得删掉 `.dev.vars`**，否则下次本地跑会指向一个已经停掉的代理。
+
+完整生命周期测法：先带 `REPLAY_FORCE_SCHEDULED=1` 同步一次（写入预测），
+再去掉该变量重启代理并同步（同一批比赛变为已完赛，触发结算与评分更新）。
 
 ### 模型调参
 
@@ -231,5 +246,9 @@ Worker 每次运行会回收超过 1 天仍为 `live`/`scheduled` 的旧比赛�
 
 ### ESPN 返回 403
 
-- 本地 workerd：预期行为，见上文回放代理。
-- 生产环境：通常是短时限流。回测脚本若一次性猛拉会触发，脚本已内置节流与退避。
+Akamai 对 `site.api.espn.com` 拒绝 Cloudflare Workers 与本地 workerd 的请求，但
+`site.web.api.espn.com` 正常——同一套 API、同样的响应结构。`ESPN_SCOREBOARD_HOSTS`
+按顺序尝试，`/sync` 与 `/health` 的 `espnHost` 字段会报出当前实际用的是哪个。
+
+两个都 403 的话通常是短时限流（回测脚本一次性猛拉会触发，脚本已内置节流与退避）。
+用 `/debug/espn?url=<完整地址>` 单独探测某个主机，该端点限定在已知体育数据域名内。
